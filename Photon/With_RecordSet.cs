@@ -1,12 +1,6 @@
 using System;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Data.Linq;
-using System.Linq.Expressions;
-using System.Linq;
 using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
 
 namespace Photon.Data
 {
@@ -119,23 +113,28 @@ namespace Photon.Data
             row.GetField<int>(1);
             row.GetField<int>(2);
 
-			Assert.IsTrue(TimeIt("ReadWithCast", () =>
-			                     {
-				for (var i = 0; i < 100000; i++)
-				{
-					var result = row.GetField<int>(0)
-						+ row.GetField<int>(1)
-							+ row.GetField<int>(2);
-					if (result != 3)
-					{
-						return false;
-					}
-				}
-				return true;
-			}));
+			RunTest(row);
 		}
-		
-		public void TimeIt(string name, Action action)
+
+	    private void RunTest(Row row)
+	    {
+	        Assert.IsTrue(TimeIt("ReadWithCast", () =>
+	            {
+	                for (var i = 0; i < 100000; i++)
+	                {
+	                    var result = row.GetField<int>(0)
+	                                 + row.GetField<int>(1)
+	                                 + row.GetField<int>(2);
+	                    if (result != 3)
+	                    {
+	                        return false;
+	                    }
+	                }
+	                return true;
+	            }));
+	    }
+
+	    public void TimeIt(string name, Action action)
 		{
 			var sw = new Stopwatch();
 			sw.Start();

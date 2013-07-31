@@ -1,43 +1,61 @@
 using System;
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Data.Linq;
 using System.Linq.Expressions;
 using System.Linq;
-using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
-using System.Collections.ObjectModel;
-using System.Collections.Concurrent;
 
 namespace Photon.Data
 {
     public class Converter 
     {
-        private static Delegate NullDelegate = (Action)(() => {});
-        private static MethodInfo GetMethod = typeof(Converter).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(
-            x => x.Name == "Get" && x.IsGenericMethodDefinition);
-
-        private static class ConverterCache<TIn, TOut> 
+        private static readonly Delegate NullDelegate = (Action)(() => {});
+        private static readonly MethodInfo GetMethod = typeof(Converter).GetMethods(
+            BindingFlags.NonPublic | BindingFlags.Static).First(x => x.Name == "Get" && x.IsGenericMethodDefinition);
+        
+        // ReSharper disable StaticFieldInGenericType
+        private static class ConvertType<TSource>
         {
-            public static Delegate Instance;
+            /// <summary>
+            /// Strangely, evaluating Type.IsValueType is slow (it walks up the hierarchy), so we cache the value
+            /// </summary>
+            public static readonly bool IsValueType = typeof (TSource).IsValueType;
+
+            public static class Cache<TTarget>
+            {
+                private static readonly Delegate ConverterInstance = InitializeInstance();
+
+                private static Delegate InitializeInstance()
+                {
+                    return StandardConvert.GetConvertDelegate<TSource, TTarget>() ??
+                                 GenerateConverter(typeof (TSource), typeof (TTarget)) ??
+                                 NullDelegate;
+                }
+
+                public static Func<TSource, TTarget>  Converter
+                {
+                    get { return ConverterInstance as Func<TSource, TTarget>; }
+                }
+            }
         }
+        // ReSharper restore StaticFieldInGenericType
 
         public static TTarget Convert<TSource, TTarget>(TSource source) 
         {
-            var converter = Get<TSource, TTarget>();
-            if (converter != null)
+            if (ConvertType<TTarget>.IsValueType)
             {
-                return converter(source);
+                var converter = ConvertType<TSource>.Cache<TTarget>.Converter;
+                if (converter != null)
+                {
+                    return converter(source);
+                }
             }
 
             return (TTarget)(object)source;
-//            var convertible = source as IConvertible;
-//            if (convertible != null)
-//            {
-//                return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
-//            }
-//            return (TTarget)(object)source;
+            //var convertible = source as IConvertible;
+            //if (convertible != null)
+            //{
+            //    return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
+            //}
+            //return (TTarget)(object)source;
         }
 
         private static Delegate Get(Type sourceType, Type targetType) 
@@ -46,22 +64,9 @@ namespace Photon.Data
                 sourceType, targetType).Invoke(null, new object[0]);
         }
 
-        private static Func<TIn, TOut> Get<TIn, TOut>() 
+        private static Func<TIn, TOut> Get<TIn, TOut>()
         {
-            if (!typeof(TOut).IsValueType)
-            {
-                return null;
-            }
-
-            var result = ConverterCache<TIn, TOut>.Instance; 
-            if (result == null)
-            {
-                result = StandardConvert.GetConvertDelegate<TIn, TOut>() ?? 
-                    GenerateConverter(typeof(TIn), typeof(TOut));
-                ConverterCache<TIn, TOut>.Instance = result ?? NullDelegate;
-            }
-
-            return result as Func<TIn, TOut>;
+            return ConvertType<TOut>.IsValueType ? ConvertType<TIn>.Cache<TOut>.Converter : null;
         }
 
         private static Delegate GenerateCastConverter(Type sourceType, Type targetType)
@@ -72,8 +77,6 @@ namespace Photon.Data
 
         private static Delegate GenerateConvertFromNullable(Type sourceType, Type targetType, MethodInfo convert)
         {
-            var underlyingSourceType = Nullable.GetUnderlyingType(sourceType);
-
             //  define parameter
             var parameter = Expression.Parameter(sourceType, "value");
 
@@ -130,7 +133,7 @@ namespace Photon.Data
             }
 
             //  get standard conversion method
-            var convert = Converter.Get(underlyingSourceType, underlyingTargetType);
+            var convert = Get(underlyingSourceType, underlyingTargetType);
             if (convert == null)
             {
                 return null;
