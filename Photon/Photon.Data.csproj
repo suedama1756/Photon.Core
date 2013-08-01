@@ -45,12 +45,12 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RowSet.cs" />
-    <Compile Include="RowSetColumn.cs" />
     <Compile Include="StandardConvert.cs" />
     <Compile Include="Converter.cs" />
-    <Compile Include="Row.cs" />
     <Compile Include="With_RecordSet.cs" />
+    <Compile Include="Record.cs" />
+    <Compile Include="RecordSet.cs" />
+    <Compile Include="RecordSetColumn.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

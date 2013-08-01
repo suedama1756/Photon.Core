@@ -10,11 +10,10 @@ using System.Reflection;
 
 namespace Photon.Data
 {
-	
-	public class Row
+	public class Record
 	{
 		internal int Handle;
-		internal RowSet RowSet;
+		internal RecordSet RecordSet;
 		
 		public object this[int index]
 		{
@@ -25,27 +24,31 @@ namespace Photon.Data
 		public T GetField<T>(int index)
 		{
 			CheckDisposed();
-			return RowSet.GetField<T>(Handle, index);
+			return RecordSet.GetField<T>(Handle, index);
 		}
 		
 		public void SetField<T>(int index, T value)
 		{
 			CheckDisposed();
-			RowSet.SetField<T>(Handle, index, value);
+			RecordSet.SetField<T>(Handle, index, value);
 		}
 		
-		private void CheckDisposed()
+		protected void CheckDisposed()
 		{
-			if (RowSet == null)
+			if (RecordSet == null)
 			{
-				throw new ObjectDisposedException(typeof(Row).Name);
+				throw new ObjectDisposedException(typeof(Record).Name);
 			}
 		}
 		
-		//public override string ToString()
-		//{
-		//    return "[" + string.Join(RowSet.)
-		//}
+		public override string ToString()
+		{
+            if (RecordSet == null)
+            {
+                return string.Empty;
+            }
+            return "[" + string.Join(", ", RecordSet.Columns.Select((x, i) => GetField<string>(i))) + "]";
+		}
 	}
 
 }

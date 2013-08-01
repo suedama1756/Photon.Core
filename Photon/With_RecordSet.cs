@@ -27,11 +27,11 @@ namespace Photon.Data
                 });
             }
 
-            private Row _row;
+            private Record _row;
 
             public RowSpecification GivenARowOfType(params Type[] types) 
             {
-                var rowSet = new RowSet(types);
+                var rowSet = new RecordSet(types);
                 _row = rowSet.Add();
                 return this;
             }
@@ -99,7 +99,7 @@ namespace Photon.Data
 		[Test()]
 		public void TestCase()
 		{
-			var rowSet = new RowSet(new Type[] {
+			var rowSet = new RecordSet(new Type[] {
 				typeof(String),
 				typeof(int),
 				typeof(double)
@@ -116,7 +116,7 @@ namespace Photon.Data
 			RunTest(row);
 		}
 
-	    private void RunTest(Row row)
+	    private void RunTest(Record row)
 	    {
 	        Assert.IsTrue(TimeIt("ReadWithCast", () =>
 	            {
