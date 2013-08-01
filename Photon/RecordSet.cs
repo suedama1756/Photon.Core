@@ -151,7 +151,7 @@ namespace Photon.Data
 		public bool SetField<T>(int handle, int index, T value)
 		{
 			var column = ColumnAccessors[index];
-			return column.ColumnType.SetValue<T>(column.Data, handle, value);
+			return column.SetValue<T>(handle, value);
 		}
 	}
 

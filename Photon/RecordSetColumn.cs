@@ -23,9 +23,9 @@ namespace Photon.Data
             get;
         }
 
-        public abstract T GetValue<T>(Array array, int index);
+        public abstract T GetValue<T>(int index);
 
-        public abstract bool SetValue<T>(Array array, int index, T value);
+        public abstract bool SetValue<T>(int index, T value);
 
         public static RecordSetColumn Create(Type type)
         {
@@ -63,17 +63,17 @@ namespace Photon.Data
             _data = newData;
         }
 
-		public TColumn GetValue(Array array, int index)
+		public TColumn GetValue(int index)
 		{
 			return _data[index];
 		}
 		
-		public override T GetValue<T>(Array array, int index)
+		public override T GetValue<T>(int index)
 		{
-            return Converter.Convert<TColumn, T>(_data[index]);
+            return Converter.Convert<TColumn, T>(GetValue(index));
 		}
 		
-		public bool SetValue(Array array, int index, TColumn value)
+		public bool SetValue(int index, TColumn value)
 		{
 			// modify if changed
 			var oldValue = _data[index];
@@ -85,9 +85,9 @@ namespace Photon.Data
 			return false;
 		}
 		
-		public override bool SetValue<T>(Array array, int index, T value)
+		public override bool SetValue<T>(int index, T value)
 		{
-            return SetValue (array, index, Converter.Convert<T, TColumn>(value));
+            return SetValue (index, Converter.Convert<T, TColumn>(value));
 		}
 	}
 }

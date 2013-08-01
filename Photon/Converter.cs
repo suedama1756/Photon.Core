@@ -2,6 +2,7 @@ using System;
 using System.Linq.Expressions;
 using System.Linq;
 using System.Reflection;
+using System.Globalization;
 
 namespace Photon.Data
 {
@@ -40,22 +41,22 @@ namespace Photon.Data
 
         public static TTarget Convert<TSource, TTarget>(TSource source) 
         {
-            if (ConvertType<TTarget>.IsValueType)
+//            if (ConvertType<TTarget>.IsValueType)
+//            {
+//                var converter = ConvertType<TSource>.Cache<TTarget>.Converter;
+//                if (converter != null)
+//                {
+//                    return converter(source);
+//                }
+//            }
+//
+//            return (TTarget)(object)source;
+            var convertible = source as IConvertible;
+            if (convertible != null)
             {
-                var converter = ConvertType<TSource>.Cache<TTarget>.Converter;
-                if (converter != null)
-                {
-                    return converter(source);
-                }
+                return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
             }
-
             return (TTarget)(object)source;
-            //var convertible = source as IConvertible;
-            //if (convertible != null)
-            //{
-            //    return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
-            //}
-            //return (TTarget)(object)source;
         }
 
         private static Delegate Get(Type sourceType, Type targetType) 
