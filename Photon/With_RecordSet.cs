@@ -1,9 +1,14 @@
 using System;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Reflection.Emit;
 
 namespace Photon.Data
 {
+
+
+
 
     [TestFixture]
     public class With_Convert 
@@ -13,6 +18,15 @@ namespace Photon.Data
         {
             Assert.AreEqual((int?)1, Converter.Convert<int?, int>(1));
         }
+
+        public void Test(Expression<Action<dynamic>> value) 
+        {
+//Block(
+//                x.Var("name") = Type.Create();
+           
+        }
+
+
     }
 
 	[TestFixture()]

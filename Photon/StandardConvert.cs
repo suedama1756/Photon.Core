@@ -13,50 +13,7 @@ namespace Photon.Data
 {
     public class StandardConvert 
 	{
-        private static readonly TypeCode[] TypeCodes = (TypeCode[])Enum.GetValues(typeof(TypeCode));
-        private static readonly int TypeCodeArraySize = TypeCodes.Select(x => (int)x).Max() + 1;
-        private static readonly ReadOnlyCollection<Delegate> NoConvert = new ReadOnlyCollection<Delegate>(TypeCodes.Select(x => (Delegate)null).ToArray());
-
-        public static ReadOnlyCollection<Delegate> GetToConvertDelegates<TSource>()
-        {
-            var sourceType = typeof(TSource);
-            if (!typeof(IConvertible).IsAssignableFrom(sourceType))
-            {
-                return NoConvert;
-            }
-
-            //  get source type code
-            var sourceTypeCode = Type.GetTypeCode(sourceType);
-
-            // create converters
-            var result = new Delegate[TypeCodeArraySize];
-            foreach (var typeCode in TypeCodes)
-            {
-                var index = (int)typeCode;
-                result[index] = StandardConvert.GetConvertDelegate(sourceTypeCode, typeCode);
-            }
-
-            return new ReadOnlyCollection<Delegate>(result);
-        }
-
-        public static ReadOnlyCollection<Delegate> GetConvertFromDelegates<TTarget>()
-        {
-            var targetType = typeof(TTarget);
-            var targetTypeCode = Type.GetTypeCode(targetType);
-
-            if (GetConvertMethodName(targetTypeCode) == null)
-            {
-                return NoConvert;
-            }
-
-            var result = new Delegate[TypeCodeArraySize];
-            foreach (var typeCode in TypeCodes)
-            {
-                var index = (int)typeCode;
-                result[index] = StandardConvert.GetConvertDelegate(typeCode, targetTypeCode);
-            }
-            return new ReadOnlyCollection<Delegate>(result);
-        }
+        private static readonly MethodInfo ToStringMethod = typeof(StandardConvert).GetMethod("ToString", BindingFlags.Static | BindingFlags.NonPublic);
 
         private static MethodInfo GetConvertMethod(Type sourceType, Type targetType)
         {
@@ -155,29 +112,47 @@ namespace Photon.Data
 			return null;
 		}
 
-		public static Func<TSource, TTarget> GetConvertDelegate<TSource, TTarget>() 
-		{
-			return (Func<TSource, TTarget>)GetConvertDelegate(
-                Type.GetTypeCode(typeof(TSource)), 
-                Type.GetTypeCode (typeof(TTarget)));
-		}
+        internal static string ToString<T>(T value) 
+        {
+            return value.ToString();
+        }
 
-        public static Delegate GetConvertDelegate(TypeCode source, TypeCode target) 
-		{
-			var sourceType = TypeFromTypeCode(source);
-			var targetType = TypeFromTypeCode(target);
-			
+        public static Func<TSource, TTarget> GetConvertDelegate<TSource, TTarget>()
+        {
+            var sourceType = typeof(TSource);
+            var targetType = typeof(TTarget);
+
             // if we can't derive the type then its not supported
-            if (sourceType == null || targetType == null) 
-			{
-				return null;
-			}
+            var sourceNativeType = TypeFromTypeCode(Type.GetTypeCode(sourceType));
+            if (sourceNativeType == null || TypeFromTypeCode(Type.GetTypeCode(targetType)) == null)
+            {
+                return null;
+            }
+
+            if (targetType == typeof(string))
+            {
+                return (Func<TSource, TTarget>)Delegate.CreateDelegate(
+                    typeof(Func<, >).MakeGenericType(sourceType, targetType), 
+                    ToStringMethod.MakeGenericMethod(sourceType));
+            }
 
             //  bind method and create delegate
-            var method = GetConvertMethod(sourceType, targetType);
-            return method != null ? 
-                    Delegate.CreateDelegate(typeof(Func<, >).MakeGenericType(sourceType, targetType), method) : 
-                    null;
-		}
+            var method = GetConvertMethod(sourceNativeType, targetType);
+            if (method != null)
+            {
+                if (sourceType != sourceNativeType) // Enums 
+                {
+                    // we need an additional cast
+                    var valueParameter = Expression.Parameter(sourceType);
+                    return (Func<TSource, TTarget>)Expression.Lambda(
+                        Expression.Call(method, 
+                            Expression.Convert(valueParameter, sourceNativeType)
+                        )
+                    , valueParameter).Compile();
+                }
+                return (Func<TSource, TTarget>)Delegate.CreateDelegate(typeof(Func<, >).MakeGenericType(sourceType, targetType), method);
+            }   
+            return null;
+        }
 	}
 }

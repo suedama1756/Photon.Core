@@ -12,13 +12,18 @@ namespace Photon.Data
         private static readonly MethodInfo GetMethod = typeof(Converter).GetMethods(
             BindingFlags.NonPublic | BindingFlags.Static).First(x => x.Name == "Get" && x.IsGenericMethodDefinition);
         
-        // ReSharper disable StaticFieldInGenericType
         private static class ConvertType<TSource>
         {
             /// <summary>
             /// Strangely, evaluating Type.IsValueType is slow (it walks up the hierarchy), so we cache the value
             /// </summary>
-            public static readonly bool IsValueType = typeof (TSource).IsValueType;
+            internal static readonly bool IsWorthGeneratingAConverter = GetIsWorthConvertingTo();
+
+            static bool GetIsWorthConvertingTo()
+            {
+                return typeof(TSource).IsValueType || 
+                    typeof(TSource) == typeof(string);
+            }
 
             public static class Cache<TTarget>
             {
@@ -37,26 +42,25 @@ namespace Photon.Data
                 }
             }
         }
-        // ReSharper restore StaticFieldInGenericType
 
         public static TTarget Convert<TSource, TTarget>(TSource source) 
         {
-//            if (ConvertType<TTarget>.IsValueType)
-//            {
-//                var converter = ConvertType<TSource>.Cache<TTarget>.Converter;
-//                if (converter != null)
-//                {
-//                    return converter(source);
-//                }
-//            }
-//
-//            return (TTarget)(object)source;
-            var convertible = source as IConvertible;
-            if (convertible != null)
+            if (ConvertType<TTarget>.IsWorthGeneratingAConverter)
             {
-                return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
+                var converter = ConvertType<TSource>.Cache<TTarget>.Converter;
+                if (converter != null)
+                {
+                    return converter(source);
+                }
             }
+
             return (TTarget)(object)source;
+//            var convertible = source as IConvertible;
+//            if (convertible != null)
+//            {
+//                return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
+//            }
+//            return (TTarget)(object)source;
         }
 
         private static Delegate Get(Type sourceType, Type targetType) 
@@ -67,7 +71,7 @@ namespace Photon.Data
 
         private static Func<TIn, TOut> Get<TIn, TOut>()
         {
-            return ConvertType<TOut>.IsValueType ? ConvertType<TIn>.Cache<TOut>.Converter : null;
+            return ConvertType<TOut>.IsWorthGeneratingAConverter ? ConvertType<TIn>.Cache<TOut>.Converter : null;
         }
 
         private static Delegate GenerateCastConverter(Type sourceType, Type targetType)
@@ -76,7 +80,7 @@ namespace Photon.Data
             return Expression.Lambda(Expression.Convert(parameter, targetType), parameter).Compile();
         }
 
-        private static Delegate GenerateConvertFromNullable(Type sourceType, Type targetType, MethodInfo convert)
+        private static Delegate GenerateFromNullableConverter(Type sourceType, Type targetType, MethodInfo convert)
         {
             //  define parameter
             var parameter = Expression.Parameter(sourceType, "value");
@@ -89,7 +93,7 @@ namespace Photon.Data
 
             //  what do we do if its null
             Expression whenNull;
-            if (Nullable.GetUnderlyingType(targetType) == null)
+            if (targetType.IsValueType && (Nullable.GetUnderlyingType(targetType) == null))
             {
                 whenNull = Expression.Throw(Expression.New(typeof(InvalidCastException)));
             }
@@ -110,7 +114,7 @@ namespace Photon.Data
 
         }
 
-        static Delegate GenerateToNullableConverter(Type sourceType, Type targetType, MethodInfo convert)
+        private static Delegate GenerateToNullableConverter(Type sourceType, Type targetType, MethodInfo convert)
         {
             //  define parameter
             var parameter = Expression.Parameter(sourceType, "value");
@@ -141,34 +145,52 @@ namespace Photon.Data
             }
             if (underlyingSourceType != sourceType)
             {
-                return GenerateConvertFromNullable(sourceType, targetType, convert.Method);
+                return GenerateFromNullableConverter(sourceType, targetType, convert.Method);
             }
 
             return GenerateToNullableConverter(sourceType, targetType, convert.Method);
-
-
-
-
         }
 
         private static Delegate GenerateConverter(Type sourceType, Type targetType)
         {
             // we are only interested in values that may get boxed/unboxed, casting will deal with all other scenarios
-            if (!(sourceType.IsValueType && targetType.IsValueType))
-            {
-                return null;
-            }
-
-            Delegate result = null;
-
-            if (targetType.IsAssignableFrom(sourceType))
+            if (CanCast(sourceType, targetType)) 
             {
                 return GenerateCastConverter(sourceType, targetType);
             }
-
+                
             return GenerateNullableConverter(sourceType, targetType);
         }
-         
+
+        private static bool CanCast(Type sourceType, Type targetType) 
+        {
+            if (targetType.IsAssignableFrom(sourceType)) 
+            {
+                return true;
+            }
+
+            var result = HasCastOperator(sourceType, sourceType, targetType) ||
+                HasCastOperator(targetType, sourceType, targetType);
+            return result;
+        }
+
+        private static bool HasCastOperator(IReflect type, Type sourceType, Type targetType) 
+        {
+            return type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Any(x => IsCastOperatorMethod(x, sourceType, targetType));
+        }
+
+        private static bool IsCastOperatorMethod(MethodInfo method, Type sourceType, Type targetType) 
+        {
+            var result = (method.Name == "op_Implicit" || method.Name == "op_Explicit") &&
+                method.ReturnType == targetType;
+            if (result) 
+            {
+                var parameters = method.GetParameters();
+                return parameters.Length == 1 && parameters[0].ParameterType == sourceType;
+            }
+            return false;       
+        }
     }
 
 

@@ -51,6 +51,8 @@
     <Compile Include="Record.cs" />
     <Compile Include="RecordSet.cs" />
     <Compile Include="RecordSetColumn.cs" />
+    <Compile Include="With_Converter.cs" />
+    <Compile Include="ConverterSpecification.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
