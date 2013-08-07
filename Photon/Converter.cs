@@ -2,82 +2,96 @@ using System;
 using System.Linq.Expressions;
 using System.Linq;
 using System.Reflection;
-using System.Globalization;
 
 namespace Photon.Data
 {
-    public class Converter 
+    public class Converter
     {
         private static readonly Delegate NullDelegate = (Action)(() => {});
-        private static readonly MethodInfo GetMethod = typeof(Converter).GetMethods(
-            BindingFlags.NonPublic | BindingFlags.Static).First(x => x.Name == "Get" && x.IsGenericMethodDefinition);
-        
-        private static class ConvertType<TSource>
+        private static readonly MethodInfo ConvertConverterMethod = typeof(Converter).GetMethods(
+            BindingFlags.NonPublic | BindingFlags.Static).First(x => x.Name == "GetConverter" && x.IsGenericMethodDefinition);
+        private static readonly MethodInfo ToStringMethod = typeof(Converter).GetMethod("ToString", BindingFlags.Static | BindingFlags.NonPublic);
+
+        private static class Convert<T>
         {
+
             /// <summary>
-            /// Strangely, evaluating Type.IsValueType is slow (it walks up the hierarchy), so we cache the value
+            /// Detecting whether a type "may" be worth converting from/to is expensive (if it needs to be evaluated each time)
             /// </summary>
-            internal static readonly bool IsWorthGeneratingAConverter = GetIsWorthConvertingTo();
+            internal static readonly bool IsSupportedConversionTarget = GetIsSupportedConversionTarget();
 
-            static bool GetIsWorthConvertingTo()
-            {
-                return typeof(TSource).IsValueType || 
-                    typeof(TSource) == typeof(string);
-            }
-
-            public static class Cache<TTarget>
+            /// <summary>
+            /// Inner static type used to convert to specific target type
+            /// </summary>
+            internal static class To<TTarget>
             {
                 private static readonly Delegate ConverterInstance = InitializeInstance();
 
                 private static Delegate InitializeInstance()
                 {
-                    return StandardConvert.GetConvertDelegate<TSource, TTarget>() ??
-                                 GenerateConverter(typeof (TSource), typeof (TTarget)) ??
-                                 NullDelegate;
+                    return GetStandardConvertDelegate<T, TTarget>() ??
+                        GenerateConverter(typeof(T), typeof(TTarget)) ??
+                            NullDelegate;
                 }
 
-                public static Func<TSource, TTarget>  Converter
+                public static Func<T, TTarget>  Converter
                 {
-                    get { return ConverterInstance as Func<TSource, TTarget>; }
+                    get { return ConverterInstance as Func<T, TTarget>; }
                 }
+            }
+
+            private static bool GetIsSupportedConversionTarget()
+            {
+                return typeof(T).IsValueType || 
+                    typeof(T) == typeof(string);
             }
         }
 
-        public static TTarget Convert<TSource, TTarget>(TSource source) 
+        public static TTarget Convert<TSource, TTarget>(TSource source)
         {
-            if (ConvertType<TTarget>.IsWorthGeneratingAConverter)
+            var converter = GetConverter<TSource, TTarget>();
+            if (converter != null)
             {
-                var converter = ConvertType<TSource>.Cache<TTarget>.Converter;
-                if (converter != null)
-                {
-                    return converter(source);
-                }
+                return converter(source);
             }
 
             return (TTarget)(object)source;
-//            var convertible = source as IConvertible;
-//            if (convertible != null)
-//            {
-//                return (TTarget)convertible.ToType(typeof(TTarget), CultureInfo.CurrentCulture);
-//            }
-//            return (TTarget)(object)source;
         }
 
-        private static Delegate Get(Type sourceType, Type targetType) 
+        /// <summary>
+        /// Gets a converter delegate that can be used to convert from the <paramref name="sourceType"/> to <paramref name="targetType"/>.
+        /// </summary>
+        /// <returns>The converter.</returns>
+        /// <param name="sourceType">Source type.</param>
+        /// <param name="targetType">Target type.</param>
+        private static Delegate GetConverter(Type sourceType, Type targetType)
         {
-            return (Delegate)GetMethod.MakeGenericMethod(
+            return (Delegate)ConvertConverterMethod.MakeGenericMethod(
                 sourceType, targetType).Invoke(null, new object[0]);
         }
 
-        private static Func<TIn, TOut> Get<TIn, TOut>()
+        /// <summary>
+        /// Gets a typed converter delegate that can be used to convert from <typeparamref="TSource" /> to <typeparamref="TTarget"/>
+        /// </summary>
+        /// <returns>The converter.</returns>
+        /// <typeparam name="TSource">The source type parameter.</typeparam>
+        /// <typeparam name="TTarget">The target type parameter.</typeparam>
+        private static Func<TSource, TTarget> GetConverter<TSource, TTarget>()
         {
-            return ConvertType<TOut>.IsWorthGeneratingAConverter ? ConvertType<TIn>.Cache<TOut>.Converter : null;
+            return Convert<TTarget>.IsSupportedConversionTarget ? Convert<TSource>.To<TTarget>.Converter : null;
         }
 
+        /// <summary>
+        /// Generates a simple cast converter
+        /// </summary>
+        /// <returns>The cast converter.</returns>
+        /// <param name="sourceType">Source type.</param>
+        /// <param name="targetType">Target type.</param>
         private static Delegate GenerateCastConverter(Type sourceType, Type targetType)
         {
             var parameter = Expression.Parameter(sourceType);
-            return Expression.Lambda(Expression.Convert(parameter, targetType), parameter).Compile();
+            return Expression.Lambda(
+                Expression.Convert(parameter, targetType), parameter).Compile();
         }
 
         private static Delegate GenerateFromNullableConverter(Type sourceType, Type targetType, MethodInfo convert)
@@ -102,7 +116,7 @@ namespace Photon.Data
                 whenNull = Expression.Return(returnLabel.Target, Expression.Constant(null, targetType), targetType);
             }
 
-            //  conver expression (reading from Nullable.value
+            //  convert expression (reading from Nullable.value)
             var convertTo = Expression.Convert(
                 Expression.Call(convert, Expression.Property(parameter, "Value")), targetType);
 
@@ -138,23 +152,22 @@ namespace Photon.Data
             }
 
             //  get standard conversion method
-            var convert = Get(underlyingSourceType, underlyingTargetType);
+            var convert = GetConverter(underlyingSourceType, underlyingTargetType);
             if (convert == null)
             {
                 return null;
             }
-            if (underlyingSourceType != sourceType)
-            {
-                return GenerateFromNullableConverter(sourceType, targetType, convert.Method);
-            }
 
-            return GenerateToNullableConverter(sourceType, targetType, convert.Method);
+            return underlyingSourceType != sourceType ? 
+                GenerateFromNullableConverter(sourceType, targetType, convert.Method) : 
+                    GenerateToNullableConverter(sourceType, targetType, convert.Method);
+
         }
 
         private static Delegate GenerateConverter(Type sourceType, Type targetType)
         {
             // we are only interested in values that may get boxed/unboxed, casting will deal with all other scenarios
-            if (CanCast(sourceType, targetType)) 
+            if (sourceType.CanCastTo(targetType))
             {
                 return GenerateCastConverter(sourceType, targetType);
             }
@@ -162,43 +175,139 @@ namespace Photon.Data
             return GenerateNullableConverter(sourceType, targetType);
         }
 
-        private static bool CanCast(Type sourceType, Type targetType) 
+        private static MethodInfo BindStandardConvertMethod(Type sourceType, Type targetType)
         {
-            if (targetType.IsAssignableFrom(sourceType)) 
+            // get conversion method name (e.g. ToInt32, ToBoolean)
+            var methodName = GetStandardConvertMethodName(targetType);
+            if (methodName == null)
             {
-                return true;
+                return null;
             }
 
-            var result = HasCastOperator(sourceType, sourceType, targetType) ||
-                HasCastOperator(targetType, sourceType, targetType);
-            return result;
-        }
-
-        private static bool HasCastOperator(IReflect type, Type sourceType, Type targetType) 
-        {
-            return type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Any(x => IsCastOperatorMethod(x, sourceType, targetType));
-        }
-
-        private static bool IsCastOperatorMethod(MethodInfo method, Type sourceType, Type targetType) 
-        {
-            var result = (method.Name == "op_Implicit" || method.Name == "op_Explicit") &&
-                method.ReturnType == targetType;
-            if (result) 
+            // bind to appropriate method
+            var methodInfo = typeof(Convert).GetMethod(methodName, BindingFlags.Static | BindingFlags.Public, null, new Type[]
             {
-                var parameters = method.GetParameters();
-                return parameters.Length == 1 && parameters[0].ParameterType == sourceType;
+                sourceType
+            }, null);
+            return methodInfo;
+        }
+
+        private static string GetStandardConvertMethodName(Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Boolean:
+                    return "ToBoolean";
+                case TypeCode.Char:
+                    return "ToChar";
+                case TypeCode.SByte:
+                    return "ToSByte";
+                case TypeCode.Byte:
+                    return "ToByte";
+                case TypeCode.Int16:
+                    return "ToInt16";
+                case TypeCode.UInt16:
+                    return "ToUInt16";
+                case TypeCode.Int32:
+                    return "ToInt32";
+                case TypeCode.UInt32:
+                    return "ToUInt32";
+                case TypeCode.Int64:
+                    return "ToInt64";
+                case TypeCode.UInt64:
+                    return "ToUInt64";
+                case TypeCode.Single:
+                    return "ToSingle";
+                case TypeCode.Double:
+                    return "ToDouble";
+                case TypeCode.Decimal:
+                    return "ToDecimal";
+                case TypeCode.DateTime:
+                    return "ToDateTime";
+                case TypeCode.String:
+                    return "ToString";
             }
-            return false;       
+            return null;
+        }
+
+        private static Type ConvertibleTypeFromTypeCode(TypeCode typeCode)
+        {
+            switch (typeCode)
+            {
+                case TypeCode.Boolean:
+                    return typeof(Boolean);
+                case TypeCode.Char:
+                    return typeof(Char);
+                case TypeCode.SByte:
+                    return typeof(SByte);
+                case TypeCode.Byte:
+                    return typeof(Byte);
+                case TypeCode.Int16:
+                    return typeof(Int16);
+                case TypeCode.UInt16:
+                    return typeof(UInt16);
+                case TypeCode.Int32:
+                    return typeof(Int32);
+                case TypeCode.UInt32:
+                    return typeof(UInt32);
+                case TypeCode.Int64:
+                    return typeof(Int64);
+                case TypeCode.UInt64:
+                    return typeof(UInt64);
+                case TypeCode.Single:
+                    return typeof(Single);
+                case TypeCode.Double:
+                    return typeof(Double);
+                case TypeCode.Decimal:
+                    return typeof(Decimal);
+                case TypeCode.DateTime:
+                    return typeof(DateTime);
+                case TypeCode.String:
+                    return typeof(String);
+            }
+            return null;
+        }
+
+        private static string ToString<T>(T value)
+        {
+            return value.ToString();
+        }
+
+        private static Func<TSource, TTarget> GetStandardConvertDelegate<TSource, TTarget>()
+        {
+            var sourceType = typeof(TSource);
+            var targetType = typeof(TTarget);
+
+            // if we can't derive the type then its not supported
+            var sourceNativeType = ConvertibleTypeFromTypeCode(Type.GetTypeCode(sourceType));
+            if (sourceNativeType == null || ConvertibleTypeFromTypeCode(Type.GetTypeCode(targetType)) == null)
+            {
+                return null;
+            }
+
+            if (targetType == typeof(string))
+            {
+                return (Func<TSource, TTarget>)Delegate.CreateDelegate(
+                    typeof(Func<, >).MakeGenericType(sourceType, targetType), 
+                    ToStringMethod.MakeGenericMethod(sourceType));
+            }
+
+            //  bind method and create delegate
+            var method = BindStandardConvertMethod(sourceNativeType, targetType);
+            if (method != null)
+            {
+                if (sourceType != sourceNativeType) // Enums 
+                {
+                    // we need an additional cast
+                    var valueParameter = Expression.Parameter(sourceType);
+                    return (Func<TSource, TTarget>)Expression.Lambda(
+                        Expression.Call(method, Expression.Convert(valueParameter, sourceNativeType)
+                    ), valueParameter).Compile();
+                }
+                return (Func<TSource, TTarget>)Delegate.CreateDelegate(typeof(Func<, >).MakeGenericType(sourceType, targetType), method);
+            }   
+
+            return null;
         }
     }
-
-
-	
-	// public class Data
-	/*
-     * So given a (col, row) we have an index into some storage, we don't know what type of storage the cell holds so we must look up by key
-     * 
-     */
-
 }

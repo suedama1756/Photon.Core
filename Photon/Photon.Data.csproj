@@ -35,27 +35,17 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data.Linq" />
     <Reference Include="System.Data" />
     <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="StandardConvert.cs" />
     <Compile Include="Converter.cs" />
-    <Compile Include="With_RecordSet.cs" />
     <Compile Include="Record.cs" />
     <Compile Include="RecordSet.cs" />
     <Compile Include="RecordSetColumn.cs" />
-    <Compile Include="With_Converter.cs" />
-    <Compile Include="ConverterSpecification.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <Compile Include="Types.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

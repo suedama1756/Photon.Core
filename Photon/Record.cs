@@ -1,12 +1,5 @@
 using System;
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Data.Linq;
-using System.Linq.Expressions;
 using System.Linq;
-using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
 
 namespace Photon.Data
 {
@@ -21,7 +14,7 @@ namespace Photon.Data
 			set { SetField(index, value); }
 		}
 		
-		public T GetField<T>(int index)
+        public T GetField<T>(int index)
 		{
 			CheckDisposed();
 			return RecordSet.GetField<T>(Handle, index);
