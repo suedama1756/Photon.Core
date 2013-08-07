@@ -1,35 +1,9 @@
 using System;
 using NUnit.Framework;
 using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
-using System.Linq.Expressions;
 
 namespace Photon.Data
 {
-
-
-
-
-    [TestFixture]
-    public class With_Convert 
-    {
-        [Test]
-        public void Should_convert_nullable_to_non_nullable_of_same_underlying_type() 
-        {
-
-        }
-
-        public void Test(Expression<Action<dynamic>> value) 
-        {
-//Block(
-//                x.Var("name") = Type.Create();
-           
-        }
-
-
-    }
-
 	[TestFixture()]
 	public class With_RecordSet
 	{

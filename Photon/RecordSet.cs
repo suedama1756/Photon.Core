@@ -80,10 +80,14 @@ namespace Photon.Data
 		public RecordSet(params Type[] types)
 		{
             Columns = new RecordSetColumnCollection(this, types);
-            ColumnAccessors = new List<RecordSetColumn>(types.Select(x => RecordSetColumn.Create(x)));
+            ColumnAccessors = new List<RecordSetColumn>(types.Select(RecordSetColumn.Create));
 		}
 
-		public RecordSetColumnCollection Columns { get; private set; }
+		public RecordSetColumnCollection Columns 
+        {
+            get; 
+            private set;
+        }
 
         public List<RecordSetColumn> ColumnAccessors
         {
