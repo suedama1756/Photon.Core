@@ -16,17 +16,17 @@ namespace Photon.Data
 		
         public T GetField<T>(int index)
 		{
-			CheckDisposed();
+			ThrowIfDisposed();
 			return RecordSet.GetField<T>(Handle, index);
 		}
 		
 		public void SetField<T>(int index, T value)
 		{
-			CheckDisposed();
+			ThrowIfDisposed();
 			RecordSet.SetField<T>(Handle, index, value);
 		}
 		
-		protected void CheckDisposed()
+		protected void ThrowIfDisposed()
 		{
 			if (RecordSet == null)
 			{

@@ -36,6 +36,20 @@ namespace Photon.Data
             {
                 Assert.AreEqual(col0, _row.GetField<T1>(0));
             }
+
+            public void ShouldRead<T1, T2>(T1 col0, T2 col1) 
+            {
+                ShouldRead(col0);
+                Assert.AreEqual(col1, _row.GetField<T1>(1));
+            }
+
+            public void ShouldRead<T1, T2, T3>(T1 col0, T2 col1, T3 col2) 
+            {
+                ShouldRead(col0, col1);
+                Assert.AreEqual(col2, _row.GetField<T1>(1));
+            }
+
+
         }
 
         public With_RecordSet()
@@ -83,7 +97,13 @@ namespace Photon.Data
                 .ShouldThrowIfReadAs<int>();
         }
 
-
+        [Test]
+        public void Supports_adding_columns() 
+        {
+            Specification.GivenARowOfType(1)
+                .WhenIAddAColumnOfType()
+                .ShouldRead();
+        }
 
 		[Test()]
 		public void TestCase()
@@ -107,7 +127,8 @@ namespace Photon.Data
 
 	    private void RunTestRecord(Record row)
 	    {
-	        Assert.IsTrue(TimeIt("ReadWithCast", () =>
+	        
+            Assert.IsTrue(TimeIt("ReadWithCast", () =>
 	            {
 	                for (var i = 0; i < 100000; i++)
 	                {

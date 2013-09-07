@@ -44,8 +44,9 @@
     <Compile Include="Converter.cs" />
     <Compile Include="Record.cs" />
     <Compile Include="RecordSet.cs" />
-    <Compile Include="RecordSetColumn.cs" />
     <Compile Include="Types.cs" />
+    <Compile Include="IColumnData.cs" />
+    <Compile Include="ColumnStorage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

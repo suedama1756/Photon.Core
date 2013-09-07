@@ -10,25 +10,7 @@ using System.Collections.ObjectModel;
 
 namespace Photon.Data
 {
-    /*
-     * How do we create a structure that we can inherit from where we don't care about the column storage?
-     * 
-     * Simple, provide a mechanism for setting the storage, or stick with your origin plan, 
-     * anything else is added on top.
-     * 
-     * This should surely lead to, so the column collection is really just a type collection, and we wrap that with 
-     * the concept of string indexing etc.
-     * 
-     * So how would the descendent provide the same thing we are after here?
-     * 
-     * Well, it would require a base collection to work right?, but, we can wrap that collection 
-     * in a list wrapper, or we can provide the collection to the base.
-     * 
-     * But in fact, all we want to do really is
-     */
-
-
-	public  class RecordSetColumnCollection : Collection<Type> 
+    public  class RecordSetColumnCollection : Collection<Type> 
     {
         public RecordSetColumnCollection(RecordSet owner, Type[] types) : base(types)
         {
@@ -80,7 +62,8 @@ namespace Photon.Data
 		public RecordSet(params Type[] types)
 		{
             Columns = new RecordSetColumnCollection(this, types);
-            ColumnAccessors = new List<RecordSetColumn>(types.Select(RecordSetColumn.Create));
+            ColumnDatas = new List<IColumnData>(
+                types.Select(x => ColumnData.Create(x, false)));
 		}
 
 		public RecordSetColumnCollection Columns 
@@ -89,39 +72,48 @@ namespace Photon.Data
             private set;
         }
 
-        public List<RecordSetColumn> ColumnAccessors
+        public List<IColumnData> ColumnDatas
         {
             get;
             private set;
         }
 
-        public virtual void InsertColumn(int index, Type item)
+        public int Capacity
         {
+            get;
+            protected set;
+        }
+
+        public void InsertColumn(int index, Type item)
+        {
+            var columnData = ColumnData.Create(item, false);
+            columnData.Resize(Capacity, 0);
+            ColumnDatas.Insert(index, columnData);
         }
 
         public void InsertColumnComplete(int index, Type item)
         {
-            throw new NotImplementedException();
+
         }
 
         public void RemoveColumn(int index, Type item)
         {
-            throw new NotImplementedException();
+            ColumnDatas.RemoveAt(index);
         }
 
         public void RemoveColumnComplete(int index, Type item)
         {
-            throw new NotImplementedException();
+
         }
 
         public void ClearColumns()
         {
-            throw new NotImplementedException();
+            ColumnDatas.Clear();
         }
 
         public void ClearColumnsComplete()
         {
-            throw new NotImplementedException();
+
         }
 		
 		public Record Add()
@@ -129,9 +121,9 @@ namespace Photon.Data
 			if (rows.Count == size)
 			{
                 var newSize = size + 16;
-                foreach (var columnAccessor in ColumnAccessors)
+                foreach (var columnData in ColumnDatas)
                 {
-                    columnAccessor.SetCapacity(newSize);
+                    columnData.Resize(newSize, rows.Count);
                 }
                 size = newSize;
 			}
@@ -147,16 +139,14 @@ namespace Photon.Data
 		
 		public T GetField<T>(int handle, int index)
 		{
-			var column = ColumnAccessors[index];
+			var column = ColumnDatas[index];
 			return column.GetValue<T>(handle);
 		}
 		
 		public bool SetField<T>(int handle, int index, T value)
 		{
-			var column = ColumnAccessors[index];
+			var column = ColumnDatas[index];
 			return column.SetValue<T>(handle, value);
 		}
 	}
-
-
 }

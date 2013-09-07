@@ -15,10 +15,9 @@ namespace Photon.Data
         private static class Convert<T>
         {
 
-            /// <summary>
-            /// Detecting whether a type "may" be worth converting from/to is expensive (if it needs to be evaluated each time)
-            /// </summary>
-            internal static readonly bool IsSupportedConversionTarget = GetIsSupportedConversionTarget();
+            public static readonly bool IsSupportedConversionTarget = GetIsSupportedConversionTarget();
+
+            public static Func<T, bool> IsNull = InitializeIsNull() ; 
 
             /// <summary>
             /// Inner static type used to convert to specific target type
@@ -45,6 +44,23 @@ namespace Photon.Data
                 return typeof(T).IsValueType || 
                     typeof(T) == typeof(string);
             }
+
+            private static bool IsNullFalse(T value) 
+            {
+                return false;
+            }
+
+            private static Func<T, bool> InitializeIsNull()
+            {
+                if (Nullable.GetUnderlyingType(typeof(T)) == null && typeof(T).IsValueType) 
+                {
+                    return IsNullFalse;
+                }
+
+                var parameter = Expression.Parameter(typeof(T));
+                return Expression.Lambda<Func<T, bool>>(Expression.Equal(
+                    parameter, Expression.Constant(null)), parameter).Compile();
+            }
         }
 
         public static TTarget Convert<TSource, TTarget>(TSource source)
@@ -56,6 +72,11 @@ namespace Photon.Data
             }
 
             return (TTarget)(object)source;
+        }
+
+        public static bool IsNull<T>(T value) 
+        {
+            return Convert<T>.IsNull(value);
         }
 
         /// <summary>

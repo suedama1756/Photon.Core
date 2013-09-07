@@ -10,20 +10,33 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Photon.Data.Tests", "Photon.Data.Tests\Photon.Data.Tests.csproj", "{54CFE614-0481-4A33-82B9-BF329BFF0674}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Photon.Data.Sample", "Photon.Data.Sample\Photon.Data.Sample.csproj", "{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		AppStore|Any CPU = AppStore|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0FDE64FB-5661-4478-8696-2446FB2DE7EB}.AppStore|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FDE64FB-5661-4478-8696-2446FB2DE7EB}.AppStore|Any CPU.Build.0 = Debug|Any CPU
 		{0FDE64FB-5661-4478-8696-2446FB2DE7EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0FDE64FB-5661-4478-8696-2446FB2DE7EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FDE64FB-5661-4478-8696-2446FB2DE7EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FDE64FB-5661-4478-8696-2446FB2DE7EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54CFE614-0481-4A33-82B9-BF329BFF0674}.AppStore|Any CPU.ActiveCfg = Debug|Any CPU
+		{54CFE614-0481-4A33-82B9-BF329BFF0674}.AppStore|Any CPU.Build.0 = Debug|Any CPU
 		{54CFE614-0481-4A33-82B9-BF329BFF0674}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{54CFE614-0481-4A33-82B9-BF329BFF0674}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54CFE614-0481-4A33-82B9-BF329BFF0674}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54CFE614-0481-4A33-82B9-BF329BFF0674}.Release|Any CPU.Build.0 = Release|Any CPU
+		{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}.AppStore|Any CPU.ActiveCfg = AppStore|Any CPU
+		{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}.AppStore|Any CPU.Build.0 = AppStore|Any CPU
+		{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{590BBC5A-8F29-46C3-9657-D3DC3CB410F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection

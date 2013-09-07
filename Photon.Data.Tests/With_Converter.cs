@@ -189,6 +189,23 @@ namespace Photon.Data.Tests
                 .WhenIConvertTo<BaseType>()
                     .ShouldReturn(obj);
         }
+
+        [Test]
+        public void Should_convert_object_null_to_nullable() 
+        {
+            Specification.GivenAValue<object>(null)
+                .WhenIConvertTo<int?>()
+                    .ShouldReturn<int?>(null);
+        }
+
+        [Test]
+        public void Should_convert_object_to_convertible() 
+        {
+            Specification.GivenAValue<object>(1)
+                .WhenIConvertTo<double>()
+                    .ShouldReturn(1.0);
+        }
+
     }
 }
 
