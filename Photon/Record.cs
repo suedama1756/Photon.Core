@@ -1,47 +1,48 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Photon.Data
 {
+
 	public class Record
 	{
 		internal int Handle;
-		internal RecordSet RecordSet;
+		internal RecordSet Store;
 		
 		public object this[int index]
 		{
-			get { return GetField<object>(index); }
-			set { SetField(index, value); }
+			get { return Field<object>(index); }
+			set { Field(index, value); }
 		}
 		
-        public T GetField<T>(int index)
+        public T Field<T>(int index)
 		{
-			ThrowIfDisposed();
-			return RecordSet.GetField<T>(Handle, index);
+			ThrowIfDeleted();
+			return Store.Field<T>(Handle, index);
 		}
 		
-		public void SetField<T>(int index, T value)
+		public void Field<T>(int index, T value)
 		{
-			ThrowIfDisposed();
-			RecordSet.SetField<T>(Handle, index, value);
+			ThrowIfDeleted();
+			Store.Field<T>(Handle, index, value);
 		}
 		
-		protected void ThrowIfDisposed()
+		protected void ThrowIfDeleted()
 		{
-			if (RecordSet == null)
+			if (Store == null)
 			{
 				throw new ObjectDisposedException(typeof(Record).Name);
 			}
 		}
-		
+
 		public override string ToString()
 		{
-            if (RecordSet == null)
+            if (Store == null)
             {
                 return string.Empty;
             }
-            return "[" + string.Join(", ", RecordSet.Columns.Select((x, i) => GetField<string>(i))) + "]";
+            return "[" + string.Join(", ", Store.Columns.Select((x, i) => Field<string>(i))) + "]";
 		}
 	}
-
 }

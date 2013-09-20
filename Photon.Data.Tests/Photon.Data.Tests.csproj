@@ -41,9 +41,10 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Compile Include="With_Converter.cs" />
-    <Compile Include="With_RecordSet.cs" />
     <Compile Include="Specifications\ConverterSpecification.cs" />
     <Compile Include="With_ColumnData.cs" />
+    <Compile Include="With_DataRow.cs" />
+    <Compile Include="TestOperations.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Photon\Photon.Data.csproj">

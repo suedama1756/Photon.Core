@@ -11,22 +11,23 @@ namespace Photon.Data.Sample
     {
         static void Main(string[] args)
         {
-            RecordSet recordSet = new RecordSet(new Type[]
+            RecordSet ColumnStore = new RecordSet(new Type[]
                                                 {
                 typeof(int), typeof(int?), typeof(bool), typeof(string)
             });
 
-            var record = recordSet.Add();
+            var record = new Record();
+            ColumnStore.Add(record);
             var sw = new Stopwatch();
 
-            record.GetField<int>(0);
-            record.GetField<string>(0);
-            record.GetField<long>(0);
+            record.Field<int>(0);
+            record.Field<string>(0);
+            record.Field<long>(0);
             sw.Start();
             for (var i=0; i<1000000; i++) {
-                record.GetField<int>(0);
-                record.GetField<string>(0);
-                record.GetField<long>(0);
+                record.Field<int>(0);
+                record.Field<string>(0);
+                record.Field<long>(0);
             }
             Console.WriteLine(sw.ElapsedMilliseconds);
             NSApplication.Init();

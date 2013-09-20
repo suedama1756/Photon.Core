@@ -2,6 +2,7 @@ using System;
 using System.Linq.Expressions;
 using System.Linq;
 using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace Photon.Data
 {
@@ -10,11 +11,12 @@ namespace Photon.Data
         private static readonly Delegate NullDelegate = (Action)(() => {});
         private static readonly MethodInfo ConvertConverterMethod = typeof(Converter).GetMethods(
             BindingFlags.NonPublic | BindingFlags.Static).First(x => x.Name == "GetConverter" && x.IsGenericMethodDefinition);
-        private static readonly MethodInfo ToStringMethod = typeof(Converter).GetMethod("ToString", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo ClassToStringMethod = typeof(Converter).GetMethod("ClassToString", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo StructToStringMethod = typeof(Converter).GetMethod("StructToString", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly ConcurrentDictionary<Type, Delegate> _boxedMap = new ConcurrentDictionary<Type, Delegate>();
 
         private static class Convert<T>
         {
-
             public static readonly bool IsSupportedConversionTarget = GetIsSupportedConversionTarget();
 
             public static Func<T, bool> IsNull = InitializeIsNull() ; 
@@ -45,7 +47,7 @@ namespace Photon.Data
                     typeof(T) == typeof(string);
             }
 
-            private static bool IsNullFalse(T value) 
+            private static bool False(T value) 
             {
                 return false;
             }
@@ -54,7 +56,7 @@ namespace Photon.Data
             {
                 if (Nullable.GetUnderlyingType(typeof(T)) == null && typeof(T).IsValueType) 
                 {
-                    return IsNullFalse;
+                    return False;
                 }
 
                 var parameter = Expression.Parameter(typeof(T));
@@ -71,8 +73,36 @@ namespace Photon.Data
                 return converter(source);
             }
 
+            if (!IsNull(source)) 
+            {
+                var sourceType = source.GetType();
+                if (sourceType.IsValueType)
+                {
+                    Delegate convertDelegate;
+                    if (!_boxedMap.TryGetValue(sourceType, out convertDelegate))
+                    {
+                        var method = typeof(Converter).GetMethod("UnboxAndConvert", BindingFlags.Static | BindingFlags.NonPublic);
+                        convertDelegate = Delegate.CreateDelegate(
+                            typeof(Func<TSource, TTarget>),
+                            method.MakeGenericMethod(source.GetType(), typeof(TTarget)));
+                        _boxedMap.TryAdd(sourceType, convertDelegate);
+                    }
+                    return ((Func<TSource, TTarget>)convertDelegate)(source);
+                }
+            }
+
             return (TTarget)(object)source;
         }
+
+        private static TTarget UnboxAndConvert<TSource, TTarget>(object o) 
+        {
+            var converter = GetConverter<TSource, TTarget>();
+            if (converter != null) {
+                return converter((TSource)o);
+            }
+            return (TTarget)o;
+        }
+
 
         public static bool IsNull<T>(T value) 
         {
@@ -289,7 +319,12 @@ namespace Photon.Data
             return null;
         }
 
-        private static string ToString<T>(T value)
+        private static string ClassToString<T>(T value) where T:class
+        {
+            return value != null ? value.ToString() : null;
+        }
+
+        private static string StructToString<T>(T value) where T: struct
         {
             return value.ToString();
         }
@@ -306,15 +341,20 @@ namespace Photon.Data
                 return null;
             }
 
+            MethodInfo method;
             if (targetType == typeof(string))
             {
-                return (Func<TSource, TTarget>)Delegate.CreateDelegate(
-                    typeof(Func<, >).MakeGenericType(sourceType, targetType), 
-                    ToStringMethod.MakeGenericMethod(sourceType));
+                method = (sourceType.IsValueType ? StructToStringMethod : ClassToStringMethod);
+                if (sourceType.IsValueType) {
+                    return (Func<TSource, TTarget>)Delegate.CreateDelegate(
+                        typeof(Func<, >).MakeGenericType(sourceType, targetType), 
+                        method.MakeGenericMethod(sourceType));
+                } 
+
             }
 
             //  bind method and create delegate
-            var method = BindStandardConvertMethod(sourceNativeType, targetType);
+            method = BindStandardConvertMethod(sourceNativeType, targetType);
             if (method != null)
             {
                 if (sourceType != sourceNativeType) // Enums 

@@ -206,6 +206,14 @@ namespace Photon.Data.Tests
                     .ShouldReturn(1.0);
         }
 
+        [Test]
+        public void Should_convert_null_string_to_string() 
+        {
+            Specification.GivenAValue<string>(null)
+                .WhenIConvertTo<string>()
+                    .ShouldReturn<string>(null);
+        }
+
     }
 }
 

@@ -68,6 +68,7 @@ namespace Photon.Data.Tests
 
             public override void AssertEquals<TValue>(TValue value)
             {
+                Assert.IsNull(_exception, "Unexpected exception {0}.", _exception);
                 Assert.AreEqual(value, _value);
             }
         }

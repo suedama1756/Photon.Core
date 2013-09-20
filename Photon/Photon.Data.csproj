@@ -42,11 +42,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Converter.cs" />
-    <Compile Include="Record.cs" />
-    <Compile Include="RecordSet.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="IColumnData.cs" />
-    <Compile Include="ColumnStorage.cs" />
+    <Compile Include="Record.cs" />
+    <Compile Include="IRecord.cs" />
+    <Compile Include="ColumnData.cs" />
+    <Compile Include="ColumnDataNullable.cs" />
+    <Compile Include="ColumnDataStore.cs" />
+    <Compile Include="RecordSetColumnCollection.cs" />
+    <Compile Include="RecordSet.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
