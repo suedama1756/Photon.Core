@@ -45,14 +45,6 @@
     <Compile Include="ConverterGenerator.cs" />
     <Compile Include="GenericType.cs" />
     <Compile Include="Reflection\Types.cs" />
-    <Compile Include="Data\IColumnData.cs" />
-    <Compile Include="Data\Record.cs" />
-    <Compile Include="Data\IRecord.cs" />
-    <Compile Include="Data\ColumnData.cs" />
-    <Compile Include="Data\ColumnDataNullable.cs" />
-    <Compile Include="Data\ColumnDataStore.cs" />
-    <Compile Include="Data\RecordSetColumnCollection.cs" />
-    <Compile Include="Data\RecordSet.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

@@ -3,13 +3,16 @@ using System.Linq;
 
 namespace Photon.Data
 {
+    public class Record : IRecord
+    {
+        #region Fields
 
-	public class Record
-	{
-		internal int Handle;
+        internal int Handle = -1;
 		internal RecordSet Store;
-		
-		public object this[int index]
+
+        #endregion
+
+        public object this[int index]
 		{
 			get { return Field<object>(index); }
 			set { Field(index, value); }
@@ -17,21 +20,34 @@ namespace Photon.Data
 		
         public T Field<T>(int index)
 		{
-			ThrowIfDeleted();
+			ThrowIfDetached();
 			return Store.Field<T>(Handle, index);
 		}
 		
 		public void Field<T>(int index, T value)
 		{
-			ThrowIfDeleted();
+			ThrowIfDetached();
 			Store.Field<T>(Handle, index, value);
 		}
-		
-		protected void ThrowIfDeleted()
+
+	    public Type FieldType(int index)
+	    {
+	        return Store.Columns[index];
+	    }
+
+	    public int FieldCount
+	    {
+	        get
+	        {
+	            return Store.Columns.Count;
+	        }
+	    }
+
+	    protected void ThrowIfDetached()
 		{
 			if (Store == null)
 			{
-				throw new ObjectDisposedException(typeof(Record).Name);
+				throw new InvalidOperationException("The record is not attached to any storage.");
 			}
 		}
 

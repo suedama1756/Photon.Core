@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Photon.Data
 {
-    public class ColumnData 
+    internal class ColumnData 
     {
         public static IColumnData<TDataType> Create<TDataType>()
         {
@@ -39,13 +39,12 @@ namespace Photon.Data
             return typeof(ColumnData<>).MakeGenericType(dataType);
         }
     }
-
-
+    
     internal class ColumnData<TDataType> : IColumnData<TDataType>
     {
         #region Fields
 
-        private ColumnDataStore<TDataType> _storage;
+        private readonly ColumnDataStore<TDataType> _storage;
 
         #endregion
 
@@ -66,9 +65,9 @@ namespace Photon.Data
             }
         }
 
-        public void Resize(int capacity, int count) 
+        public void Resize(int capacity, int preserve) 
         {
-            _storage.Resize(capacity, count);
+            _storage.Resize(capacity, preserve);
         }
 
         public Type DataType
@@ -117,5 +116,4 @@ namespace Photon.Data
             return _storage.ChangeValue(index, value);
         }
     }
-    
 }

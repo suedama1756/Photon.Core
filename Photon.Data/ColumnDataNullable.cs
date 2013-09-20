@@ -4,15 +4,13 @@ using System.Collections;
 
 namespace Photon.Data
 {
-
     internal class ColumnDataNullable<TDataType> : IColumnData<TDataType?> where TDataType : struct
     {
         private BitArray _hasValue;
-        private ColumnDataStore<TDataType> _values;
+        private readonly ColumnDataStore<TDataType> _values;
 
         public ColumnDataNullable() : this(EqualityComparer<TDataType>.Default) 
         {
-
         }
 
         public ColumnDataNullable(IEqualityComparer<TDataType> equalityComparer) 
@@ -20,9 +18,9 @@ namespace Photon.Data
             _values = new ColumnDataStore<TDataType>(equalityComparer);  
         }
 
-        public void Resize(int capacity, int count)
+        public void Resize(int capacity, int preserve)
         {
-            _values.Resize(capacity, count);
+            _values.Resize(capacity, preserve);
             if (_hasValue == null)
             {
                 _hasValue = new BitArray(capacity);
@@ -42,10 +40,7 @@ namespace Photon.Data
 
         public int Capacity 
         {
-            get
-            {
-                return _values.Capacity;
-            }
+            get { return _values.Capacity; }
         }
 
         public bool IsNull(int index) 

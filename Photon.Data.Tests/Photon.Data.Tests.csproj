@@ -40,9 +40,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Compile Include="With_ColumnData.cs" />
-    <Compile Include="With_DataRow.cs" />
-    <Compile Include="TestOperations.cs" />
+    <Compile Include="With_RecordSet_Row.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -51,6 +49,10 @@
     <ProjectReference Include="..\Photon.CoreLib\Photon.CoreLib.csproj">
       <Project>{0FDE64FB-5661-4478-8696-2446FB2DE7EB}</Project>
       <Name>Photon.CoreLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Photon.Data\Photon.Data.csproj">
+      <Project>{69DFB24A-22C0-4707-8921-2A805B694D7C}</Project>
+      <Name>Photon.Data</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

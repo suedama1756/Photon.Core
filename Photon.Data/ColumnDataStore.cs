@@ -3,74 +3,79 @@ using System.Collections.Generic;
 
 namespace Photon.Data
 {
-    internal class ColumnDataStore<TDataType> 
-	{
-		private IEqualityComparer<TDataType> _equalityComparer;
-        private TDataType[] Data;
+    internal class ColumnDataStore<TDataType>
+    {
+        #region Fields
+
+        private readonly IEqualityComparer<TDataType> _equalityComparer;
+        private TDataType[] _data;
         private bool _isNullable;
 
-        internal ColumnDataStore(IEqualityComparer<TDataType> equalityComparer)
+        #endregion
+
+        public ColumnDataStore(IEqualityComparer<TDataType> equalityComparer)
         {
             if (equalityComparer == null)
             {
                 throw new ArgumentNullException("equalityComparer");
             }
             _equalityComparer = equalityComparer;
-
+            
             // determine whether the type is nullable, e.g. if its a ref type, or nullable<>
             _isNullable = !typeof(TDataType).IsValueType ||
                 Nullable.GetUnderlyingType(typeof(TDataType)) != null;
         }
 
-        internal void Resize(int capacity, int count)
+        public void Resize(int capacity, int preserveCount)
         {
             // allocate data
             var newData = new TDataType[capacity];
-            var oldData = Data;
+            var oldData = _data;
 
             if (oldData != null)
             {
-                Array.Copy(oldData, newData, count);
+                Array.Copy(oldData, newData, preserveCount);
             }
-            Data = newData;
+            _data = newData;
         }
 
-        internal int Capacity
+        public int Capacity
         {
             get 
             {
-                return Data != null ? Data.Length : 0;
-            }
-        }
-
-        internal bool IsNullable 
-        {
-            get
+                return _data != null ? _data.Length : 0;
+            } 
+            set
             {
-                return _isNullable;
+                Resize(value, value);
             }
         }
 
-        internal bool ChangeValue(int index, TDataType value)
+        public bool IsNullable
         {
-            var oldValue = Data[index];
+            get { return _isNullable; }
+        }
+
+        public bool ChangeValue(int index, TDataType value)
+        {
+            var oldValue = _data[index];
             if (!_equalityComparer.Equals(oldValue, value))
             {
-                Data[index] = value;
+                _data[index] = value;
                 return true;
             }
             return false;
         }
 
-        internal TDataType this[int index] 
+        public TDataType this[int index] 
         {
             get
             {
-                return Data[index];
+                return _data[index];
             }
             set
             {
-                Data[index] = value;
+                _data[index] = value;
             }
         }
 	}
