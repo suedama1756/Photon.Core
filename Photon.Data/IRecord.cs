@@ -7,15 +7,28 @@ namespace Photon.Data
         object this [int index]
         {
             get; set;
+        }
+
+        object this[string name]
+        {
+            get;
+            set;
         }    
 
-        T Field<T>(int index);
+        T GetValue<T>(int index);
 
-        void Field<T>(int index, T value);
+        bool SetValue<T>(int index, T value);
 
-        Type FieldType(int index);
+        T GetValue<T>(string name);
+
+        bool SetValue<T>(string name, T value);
+
+        Type GetFieldType(int index);
+
+        int GetOrdinal(string name);
+
+        string GetName(int ordinal);
 
         int FieldCount { get; }
     }
-	
 }

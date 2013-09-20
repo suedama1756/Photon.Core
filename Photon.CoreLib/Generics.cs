@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Photon
 {
-    public class Generics
+    public static class Generics
     {
         private static readonly ConcurrentDictionary<Type, Delegate> BoxedTypeMap = new ConcurrentDictionary<Type, Delegate>();
         private static readonly MethodInfo CastAndConvertMethod = typeof(Generics)
@@ -42,7 +42,9 @@ namespace Photon
             return GenericType<T>.IsNull(value);
         }
 
-        protected static TTarget CastAndConvert<TSource, TTarget>(object o)
+        // ReSharper disable UnusedMember.Local
+
+        private static TTarget CastAndConvert<TSource, TTarget>(object o)
         {
             var converter = GenericType<TSource>.GetConverter<TTarget>();
             if (converter != null)
@@ -51,5 +53,7 @@ namespace Photon
             }
             return (TTarget)o;
         }
+
+        // ReSharper restore UnusedMember.Local
     }
 }

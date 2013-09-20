@@ -165,28 +165,23 @@ namespace Photon
         {
             // if we can't derive the type then its not supported
             var sourceNativeType = GetConvertibleTypeFromTypeCode(Type.GetTypeCode(sourceType));
-            if (sourceNativeType == null || GetConvertibleTypeFromTypeCode(Type.GetTypeCode(targetType)) == null)
+            if ((sourceNativeType == null || GetConvertibleTypeFromTypeCode(Type.GetTypeCode(targetType)) == null))
             {
                 return null;
             }
-
-            MethodInfo method;
-            if (targetType == typeof(string))
-            {
-                method = (sourceType.IsValueType ? StructToStringMethod : ClassToStringMethod);
-                if (sourceType.IsValueType)
-                {
-                    return Delegate.CreateDelegate(typeof(Func<,>).MakeGenericType(sourceType, targetType),
-                        method.MakeGenericMethod(sourceType));
-                }
-            }
-
+            
             //  bind method and create delegate
-            method = GetConvertibleTargetMethod(sourceNativeType, targetType);
+            var method = GetConvertibleTargetMethod(sourceNativeType, targetType);
             if (method != null)
             {
                 if (sourceType != sourceNativeType) // Enums 
                 {
+                    // let toString pick this one up; otherwise we just get the oridinal value as string
+                    if (targetType == typeof (string))
+                    {
+                        return null;
+                    }
+
                     // we need an additional cast
                     var valueParameter = Expression.Parameter(sourceType);
                     return Expression.Lambda(
@@ -198,6 +193,18 @@ namespace Photon
             }
 
             return null;
+        }
+
+        private static Delegate TryGenerateToString(Type sourceType, Type targetType)
+        {
+            if (targetType != typeof (string))
+            {
+                return null;
+            }
+            
+            var method = (sourceType.IsValueType ? StructToStringMethod : ClassToStringMethod);
+            return Delegate.CreateDelegate(typeof (Func<,>).MakeGenericType(sourceType, targetType),
+                method.MakeGenericMethod(sourceType));
         }
 
         private static Delegate TryGenerateParse(Type sourceType, Type targetType)
@@ -387,11 +394,13 @@ namespace Photon
         
         public static Delegate TryGenerate(Type sourceType, Type targetType)
         {
+            // unfortunetly order is important
             return TryGenerateCastConverter(sourceType, targetType) ??
                    TryGenerateTryParse(sourceType, targetType) ??
                    TryGenerateParse(sourceType, targetType) ??
                    TryGenerateConvertibleConverter(sourceType, targetType) ??
-                   TryGenerateNullableConverter(sourceType, targetType);
+                   TryGenerateNullableConverter(sourceType, targetType) ??
+                   TryGenerateToString(sourceType, targetType);
         }
     }
 }

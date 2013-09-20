@@ -3,23 +3,8 @@ using System.Collections.Generic;
 
 namespace Photon.Data
 {
-    internal class ColumnData 
+    internal static class ColumnData 
     {
-        public static IColumnData<TDataType> Create<TDataType>()
-        {
-            var dataType = typeof(TDataType);
-            if (dataType.IsValueType) 
-            {
-                var underlyingType = Nullable.GetUnderlyingType(dataType);
-                if (underlyingType != null) 
-                {
-                    return (IColumnData<TDataType>)Create(underlyingType, true);
-                }
-            }
-
-            return new ColumnData<TDataType>();
-        }
-
         public static IColumnData Create(Type dataType, bool requireNullable)
         {
             var type = SelectColumnDataType(dataType, requireNullable);

@@ -226,6 +226,12 @@ namespace Photon.Tests
         }
 
         [Test]
+        public void Can_convert_class_to_string()
+        {
+            Specification.ShouldConvert(new object(), "System.Object");
+        }
+
+        [Test]
         public void Throws_if_overflow_detected()
         {
             Specification.ShouldThrow<Int64, Int16, OverflowException>(Int64.MaxValue);
@@ -237,8 +243,23 @@ namespace Photon.Tests
             Specification.ShouldThrow<DateTime, short, InvalidCastException>(DateTime.Now);
         }
 
-
-        
+        [Test]
+        public void Can_convert_convertibles()
+        {
+            Specification.ShouldConvert(1, (byte) 1);
+            Specification.ShouldConvert(1, (sbyte)1);
+            Specification.ShouldConvert(1, (short)1);
+            Specification.ShouldConvert(1, (ushort)1);
+            Specification.ShouldConvert(1L, 1);
+            Specification.ShouldConvert(1L, (uint)1);
+            Specification.ShouldConvert(1, 1L);
+            Specification.ShouldConvert(1, (ulong)1);
+            Specification.ShouldConvert(1, 1.0);
+            Specification.ShouldConvert(1, (float)1.0);
+            Specification.ShouldConvert(1, true);
+            Specification.ShouldConvert(1, (char)1);
+            Specification.ShouldConvert(1, (decimal)1);
+        }
     }
 }
 

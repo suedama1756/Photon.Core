@@ -1,51 +1,141 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Photon.Data
 {
-    public  class RecordSetColumnCollection  : Collection<Type> 
+    public class RecordSetColumnCollection  : Collection<RecordSetColumn> 
     {
-        internal RecordSetColumnCollection (RecordSet owner, Type[] types) : base(new List<Type>(types))
+        private readonly Dictionary<string, RecordSetColumn> _columnMap = new Dictionary<string, RecordSetColumn>();
+
+        internal RecordSetColumnCollection (RecordSet owner) 
         {
             Owner = owner;
         }
-
+        
         protected RecordSet Owner
         {
             get;
             private set;
         }
 
-        protected override void InsertItem(int index, Type item)
+        protected override void InsertItem(int index, RecordSetColumn item)
         {
-            Owner.InsertColumn(index, item);
+            if (item == null)
+            {
+                throw new ArgumentNullException("item");
+            }
+
+            if (item.RecordSet == Owner)
+            {
+                throw ExceptionFactory.RecordSetColumnAlreadyOwnedByThisRecordSet("item");
+            }
+
+            if (item.RecordSet != null)
+            {
+                throw ExceptionFactory.RecordSetColumnAlreadyOwnerByAnotherRecordSet("item");
+            }
+
+            if (_columnMap.ContainsKey(item.Name))
+            {
+                throw ExceptionFactory.RecordSetColumnDuplicateName("item");
+            }
+
             base.InsertItem(index, item);
-            Owner.InsertColumnComplete(index, item);
+            _columnMap[item.Name] = item;
+            Owner.ColumnInserted(index, item);
         }
 
         protected override void RemoveItem(int index)
         {
             var item = Items[index];
-            Owner.RemoveColumn(index, item);
             base.RemoveItem(index);
-            Owner.RemoveColumnComplete(index, item);
+            _columnMap.Remove(item.Name);
+            Owner.ColumnRemoved(index, item);
         }
 
         protected override void ClearItems()
         {
-            Owner.ClearColumns();
+            var columns = this.ToArray();
             base.ClearItems();
-            Owner.ClearColumnsComplete();
+            _columnMap.Clear();
+            Owner.ColumnsCleared(columns);
         }
 
-        protected override void SetItem(int index, Type item)
+        protected override void SetItem(int index, RecordSetColumn item)
         {
+            if (item == null)
+            {
+                throw new ArgumentNullException("item");
+            }
+            
+            if (item.RecordSet == Owner)
+            {
+                throw ExceptionFactory.RecordSetColumnAlreadyOwnedByThisRecordSet("item");
+            }
+
+            if (item.RecordSet != null)
+            {
+                throw ExceptionFactory.RecordSetColumnAlreadyOwnerByAnotherRecordSet("item");
+            }
+
             var oldItem = Items[index];
-            Owner.SetColumn(index, oldItem, item);
-            base.RemoveItem(index);
-            Owner.SetColumnComplete(index, oldItem, item);
+            if (oldItem.Name != item.Name && _columnMap.ContainsKey(item.Name))
+            {
+                throw ExceptionFactory.RecordSetColumnDuplicateName("item");
+            }
+            
+            //  set new item
+            base.SetItem(index, item);
+            
+            //  re-index by name
+            if (oldItem.Name != item.Name)
+            {
+                _columnMap.Remove(oldItem.Name);    
+            }
+            _columnMap[item.Name] = item;
+
+            //  notify
+            Owner.ColumnSet(index, oldItem, item);
+        }
+
+        public RecordSetColumn this[string name]
+        {
+            get
+            {
+                if (name == null)
+                {
+                    throw new ArgumentNullException("name");
+                }
+
+                var result = Find(name);
+                if (result == null)
+                {
+                    throw ExceptionFactory.RecordSetColumnNotFound();
+                }
+                return result;
+            }
+        }
+
+        public RecordSetColumn Find(string name)
+        {
+            RecordSetColumn result;
+            _columnMap.TryGetValue(name, out result);
+            return result;
+        }
+
+        public void AddRange(IEnumerable<RecordSetColumn> columns)
+        {
+            if (columns == null)
+            {
+                throw new ArgumentNullException("columns");
+            }
+
+            foreach (var column in columns)
+            {
+                Add(column);
+            }
         }
     }
-	
 }

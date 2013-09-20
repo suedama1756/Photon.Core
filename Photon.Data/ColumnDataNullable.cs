@@ -47,15 +47,7 @@ namespace Photon.Data
         {
             return !_hasValue[index];
         }
-
-        public bool IsNullable
-        {
-            get
-            {
-                return true;
-            }
-        }
-
+        
         public Type DataType 
         {
             get
