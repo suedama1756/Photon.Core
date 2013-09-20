@@ -8,7 +8,7 @@
     <ProjectGuid>{0FDE64FB-5661-4478-8696-2446FB2DE7EB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Photon</RootNamespace>
-    <AssemblyName>Photon.Data</AssemblyName>
+    <AssemblyName>Photon.CoreLib</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,16 +41,18 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Converter.cs" />
-    <Compile Include="Types.cs" />
-    <Compile Include="IColumnData.cs" />
-    <Compile Include="Record.cs" />
-    <Compile Include="IRecord.cs" />
-    <Compile Include="ColumnData.cs" />
-    <Compile Include="ColumnDataNullable.cs" />
-    <Compile Include="ColumnDataStore.cs" />
-    <Compile Include="RecordSetColumnCollection.cs" />
-    <Compile Include="RecordSet.cs" />
+    <Compile Include="Generics.cs" />
+    <Compile Include="ConverterGenerator.cs" />
+    <Compile Include="GenericType.cs" />
+    <Compile Include="Reflection\Types.cs" />
+    <Compile Include="Data\IColumnData.cs" />
+    <Compile Include="Data\Record.cs" />
+    <Compile Include="Data\IRecord.cs" />
+    <Compile Include="Data\ColumnData.cs" />
+    <Compile Include="Data\ColumnDataNullable.cs" />
+    <Compile Include="Data\ColumnDataStore.cs" />
+    <Compile Include="Data\RecordSetColumnCollection.cs" />
+    <Compile Include="Data\RecordSet.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

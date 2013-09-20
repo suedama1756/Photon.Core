@@ -1,8 +1,7 @@
 using System;
 using NUnit.Framework;
-using System.Diagnostics;
 
-namespace Photon.Data
+namespace Photon.Data.Tests
 {
 	[TestFixture()]
 	public class With_DataRow

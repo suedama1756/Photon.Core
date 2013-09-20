@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -30,29 +30,27 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
     <Reference Include="nunit.framework">
-      <Private>False</Private>
+      <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Compile Include="With_Converter.cs" />
-    <Compile Include="Specifications\ConverterSpecification.cs" />
     <Compile Include="With_ColumnData.cs" />
     <Compile Include="With_DataRow.cs" />
     <Compile Include="TestOperations.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Photon\Photon.Data.csproj">
-      <Project>{0FDE64FB-5661-4478-8696-2446FB2DE7EB}</Project>
-      <Name>Photon.Data</Name>
-    </ProjectReference>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Specifications\" />
+    <ProjectReference Include="..\Photon.CoreLib\Photon.CoreLib.csproj">
+      <Project>{0FDE64FB-5661-4478-8696-2446FB2DE7EB}</Project>
+      <Name>Photon.CoreLib</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

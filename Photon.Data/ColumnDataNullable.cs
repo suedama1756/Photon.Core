@@ -1,5 +1,4 @@
 using System;
-
 using System.Collections.Generic;
 using System.Collections;
 
@@ -89,12 +88,12 @@ namespace Photon.Data
 
         public T GetValue<T>(int index)
         {
-            return Converter.Convert<TDataType?, T>(GetValue(index));
+            return Generics.Convert<TDataType?, T>(GetValue(index));
         }
 
         public bool SetValue<T>(int index, T value)
         {
-            return SetValue(index, Converter.Convert<T, TDataType?>(value));
+            return SetValue(index, Generics.Convert<T, TDataType?>(value));
         }
 
         public TDataType? GetValue(int index)

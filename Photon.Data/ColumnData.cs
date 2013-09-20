@@ -1,7 +1,5 @@
 using System;
-
 using System.Collections.Generic;
-using System.Collections;
 
 namespace Photon.Data
 {
@@ -91,7 +89,7 @@ namespace Photon.Data
 
         public bool IsNull(int index) 
         {
-            return _storage.IsNullable && Converter.IsNull(_storage[index]);
+            return _storage.IsNullable && Generics.IsNull(_storage[index]);
         }
 
         public bool Clear(int index) 
@@ -101,12 +99,12 @@ namespace Photon.Data
 
         public T GetValue<T>(int index)
         {
-            return Converter.Convert<TDataType, T>(_storage[index]);
+            return Generics.Convert<TDataType, T>(_storage[index]);
         }
 
         public bool SetValue<T>(int index, T value)
         {
-            return _storage.ChangeValue(index, Converter.Convert<T, TDataType>(value));
+            return _storage.ChangeValue(index, Generics.Convert<T, TDataType>(value));
         }
 
         public TDataType GetValue(int index) 

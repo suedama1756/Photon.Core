@@ -1,12 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Linq;
-using System.Linq.Expressions;
 using System.Linq;
-using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
-using System.Collections.ObjectModel;
 using System.Collections;
 
 namespace Photon.Data
@@ -137,12 +131,12 @@ namespace Photon.Data
 
             if (item.Store != null && item.Store != this)
             {
-                throw new ArgumentException("The record already belongs to another record set.", "record");
+                throw new ArgumentException("The item already belongs to another record set.", "item");
             }
                 
             if (item.Handle != -1)
             {
-                throw new ArgumentException("The record already belongs to this record set.", "record");
+                throw new ArgumentException("The item already belongs to this record set.", "item");
             }
                 
             RequireCapacity(_count + 1);

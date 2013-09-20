@@ -19,7 +19,7 @@ namespace Photon.Data
 
         protected override void InsertItem(int index, Type item)
         {
-            Owner.InsertColumnInternal(index, item);
+            Owner.InsertColumn(index, item);
             base.InsertItem(index, item);
             Owner.InsertColumnComplete(index, item);
         }
@@ -27,14 +27,14 @@ namespace Photon.Data
         protected override void RemoveItem(int index)
         {
             var item = Items[index];
-            Owner.RemoveColumnInternal(index, item);
+            Owner.RemoveColumn(index, item);
             base.RemoveItem(index);
             Owner.RemoveColumnComplete(index, item);
         }
 
         protected override void ClearItems()
         {
-            Owner.ClearColumnsInternal();
+            Owner.ClearColumns();
             base.ClearItems();
             Owner.ClearColumnsComplete();
         }
@@ -42,7 +42,7 @@ namespace Photon.Data
         protected override void SetItem(int index, Type item)
         {
             var oldItem = Items[index];
-            Owner.SetColumnInternal(index, oldItem, item);
+            Owner.SetColumn(index, oldItem, item);
             base.RemoveItem(index);
             Owner.SetColumnComplete(index, oldItem, item);
         }

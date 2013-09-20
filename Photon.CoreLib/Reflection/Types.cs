@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Linq;
 
-namespace Photon
+namespace Photon.Reflection
 {
     internal static class Types
     {
