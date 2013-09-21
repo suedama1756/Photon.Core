@@ -2,9 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8F6DBC07-ECD1-4D69-B34F-1717BA48864F}"
-	ProjectSection(SolutionItems) = preProject
-		Performance1.psess = Performance1.psess
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Photon.Data.Tests", "Photon.Data.Tests\Photon.Data.Tests.csproj", "{54CFE614-0481-4A33-82B9-BF329BFF0674}"
 EndProject
