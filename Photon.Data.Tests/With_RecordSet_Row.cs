@@ -93,6 +93,12 @@ namespace Photon.Data.Tests
                 Assert.AreEqual(0, _record.FieldCount);
             }
 
+            public TestSpecification WhenISetByIndex<T>(int index, T value)
+            {
+                _record.SetValue(index, value);
+                return this;
+            }
+
             public TestSpecification WhenISetByName<T>(string name, T value)
             {
                 _record.SetValue(name, value);
@@ -121,6 +127,15 @@ namespace Photon.Data.Tests
             {
                 Assert.AreEqual(value, _recordSet.Columns.Count);
                 return this;
+            }
+
+            public void ShouldReadIsNull(params bool[] values)
+            {
+                for (int index = 0; index < values.Length; index++)
+                {
+                    var value = values[index];
+                    Assert.AreEqual(value, _record.IsNull(index));
+                }
             }
         }
 
@@ -262,6 +277,17 @@ namespace Photon.Data.Tests
                 .ShouldMapColumnNameToOrdinal(0, "Greeting")
                 .ShouldMapColumnNameToOrdinal(1, "Language")
                 .ShouldHaveDetachedColumn(removed);
+        }
+
+        [Test]
+        public void Supports_nullables()
+        {
+            Specification
+                .GivenOrRow<int?>(1)
+                .ShouldRead<int?>(1)
+                .WhenISetByIndex<int?>(0, null)
+                .ShouldRead<int?>(null)
+                .ShouldReadIsNull(true);
         }
 	}
 }

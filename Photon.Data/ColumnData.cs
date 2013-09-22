@@ -5,20 +5,19 @@ namespace Photon.Data
 {
     internal static class ColumnData 
     {
-        public static IColumnData Create(Type dataType, bool requireNullable)
+        public static IColumnData Create(Type dataType)
         {
-            var type = SelectColumnDataType(dataType, requireNullable);
+            var type = SelectColumnDataType(dataType);
             return (IColumnData)Activator.CreateInstance(type);
         }
 
-        private static Type SelectColumnDataType(Type dataType, bool requireNullable) 
+        private static Type SelectColumnDataType(Type dataType)
         {
-            if (requireNullable && dataType.IsValueType)
+            var underlyingType = Nullable.GetUnderlyingType(dataType);
+            if (underlyingType != null)
             {
-                dataType = Nullable.GetUnderlyingType(dataType) ?? dataType;
-
                 return typeof(ColumnDataNullable<>)
-                    .MakeGenericType(dataType);
+                    .MakeGenericType(underlyingType);
             }
 
             return typeof(ColumnData<>).MakeGenericType(dataType);
@@ -74,6 +73,11 @@ namespace Photon.Data
         public bool IsNull(int index) 
         {
             return _storage.IsNullable && Generics.IsNull(_storage[index]);
+        }
+
+        public void Move(int sourceIndex, int targetIndex)
+        {
+            SetValue(targetIndex, GetValue(sourceIndex));
         }
 
         public bool Clear(int index) 

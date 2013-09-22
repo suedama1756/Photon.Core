@@ -9,6 +9,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Photon.Data.Tests</RootNamespace>
     <AssemblyName>Photon.Data.Tests</AssemblyName>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -57,4 +59,5 @@
       <Name>Photon.Data</Name>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
 </Project>

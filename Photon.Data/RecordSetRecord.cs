@@ -88,7 +88,13 @@ namespace Photon.Data
 	            return _recordSet.Columns.Count;
 	        }
 	    }
-        
+
+        public bool IsNull(int index)
+        {
+            ThrowIfDetached();
+            return _recordSet.IsNull(Handle, index);
+        }
+
         public RecordSet RecordSet
         {
             get { return _recordSet; }

@@ -16,6 +16,7 @@ namespace Photon.Data
         private readonly RecordSetColumnCollection _columns;
         private int _capacity;
         private readonly List<int> _recordsPool;
+        private int _lastRecordIndex = -1;
 
         #endregion
 
@@ -96,23 +97,65 @@ namespace Photon.Data
                 }
                 if (value > _capacity)
                 {
-                    RequireCapacity(value);
+                    Resize(value);
                 }
                 else
                 {
-                    Compact();
+                    CompactTo(value);
+                    Resize(value);
                 }
             }
         }
 
         public void Compact()
         {
-            throw new NotSupportedException("Compact:TODO");
+            CompactTo(Count);
+        }
+
+        private void CompactTo(int requiredCapacity)
+        {
+            var index = _lastRecordIndex;
+            while (index >= 0 && index > requiredCapacity)
+            {
+                //  sort the record pool
+                var comparer = Comparer<int>.Default;
+                _recordsPool.Sort((x, y) => comparer.Compare(x, y) * -1);
+
+                //  Cleared items do not need to be added back into the
+                //  pool as they are removed from the end and new items are 
+                //  added after "last index" if the pool is exhausted.
+                var handle = ReserveRecordHandle();
+
+                MoveRecord(index, handle);
+
+                // locate next item
+                do
+                {
+                    index--;
+                } while (index >= 0 && _records.GetValue(index) == null);
+            }
+
+            _lastRecordIndex = index;
+        }
+
+        private void MoveRecord(int fromIndex, int toIndex)
+        {
+            //  move record data
+            var source = _records.GetValue(fromIndex);
+            foreach (var data in _columnsData)
+            {
+                data.Move(source.Handle, toIndex);
+                data.Clear(source.Handle);
+            }
+
+            //  move record
+            _records.Move(source.Handle, toIndex);
+            source.Handle = toIndex;
         }
 
         private IColumnData CreateColumnData(Type type)
         {
-            var columnData = ColumnData.Create(type, false);
+            var columnData = ColumnData.Create(type);
             columnData.Resize(Capacity, 0);
             return columnData;
         }
@@ -121,17 +164,23 @@ namespace Photon.Data
         {
             if (_records.Capacity < capacity)
             {
-                var newCapacity = Capacity + 16;
-                foreach (var item in _columnsData)
-                {
-                    item.Resize(newCapacity, Count);
-                }
-                _records.Resize(newCapacity, Count);
-
-                _capacity = newCapacity;
+                var newCapacity = Math.Max(Capacity * 2, 4);
+                Resize(newCapacity);
             }
         }
-        
+
+        private void Resize(int newCapacity)
+        {
+            var preserve = _lastRecordIndex + 1;
+            foreach (var item in _columnsData)
+            {
+                item.Resize(newCapacity, preserve);
+            }
+            _records.Resize(newCapacity, preserve);
+
+            _capacity = newCapacity;
+        }
+
         public void Add(RecordSetRecord item)
         {
             if (item == null)
@@ -162,6 +211,10 @@ namespace Photon.Data
         {
             //  get next handle
             var handle = ReserveRecordHandle();
+            if (handle > _lastRecordIndex)
+            {
+                _lastRecordIndex = handle;
+            }
 
             AttachRecord(item, handle);
 
@@ -179,7 +232,7 @@ namespace Photon.Data
         private int RemoveRecord(RecordSetRecord item)
         {
             var handle = item.Handle;
-
+            
             // clear row, leave no references
             for (int i = 0, n = _columnsData.Count; i < n; i++)
             {
@@ -188,7 +241,17 @@ namespace Photon.Data
             _records.Clear(item.Handle);
 
             DetachRecord(item);
-            
+
+            if (handle == _lastRecordIndex)
+            {
+                do
+                {
+                    handle--;
+                } while (handle >= 0 && _records.GetValue(handle) == null);
+
+                _lastRecordIndex = handle;
+            }
+
             return handle;
         }
 
@@ -200,7 +263,7 @@ namespace Photon.Data
 
         private int ReserveRecordHandle()
         {
-            var handle = _count;
+            var handle = _lastRecordIndex + 1;
             var poolLength = _recordsPool.Count;
             if (poolLength > 0)
             {
@@ -321,5 +384,11 @@ namespace Photon.Data
 			var column = _columnsData[index];
 			return column.SetValue<T>(handle, value);
 		}
-	}
+
+        internal bool IsNull(int handle, int index)
+        {
+            var column = _columnsData[index];
+            return column.IsNull(handle);
+        }
+    }
 }

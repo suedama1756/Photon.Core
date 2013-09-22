@@ -30,5 +30,7 @@ namespace Photon.Data
         string GetName(int ordinal);
 
         int FieldCount { get; }
+        
+        bool IsNull(int index);
     }
 }

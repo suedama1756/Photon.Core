@@ -47,7 +47,12 @@ namespace Photon.Data
         {
             return !_hasValue[index];
         }
-        
+
+        public void Move(int sourceIndex, int targetIndex)
+        {
+            SetValue(targetIndex, GetValue(sourceIndex));
+        }
+
         public Type DataType 
         {
             get

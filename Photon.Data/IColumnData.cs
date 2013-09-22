@@ -17,6 +17,8 @@ namespace Photon.Data
         bool Clear(int index);
 
         bool IsNull(int index);
+        
+        void Move(int sourceIndex, int targetIndex);
     }
 
     public interface IColumnData<TDataType> : IColumnData

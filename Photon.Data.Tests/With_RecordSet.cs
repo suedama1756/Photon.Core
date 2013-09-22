@@ -1,4 +1,6 @@
 using System;
+using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using NUnit.Framework;
@@ -20,6 +22,18 @@ namespace Photon.Data.Tests
                 _recordSet.Columns.Add(new RecordSetColumn(typeof(T3)));
                 return this;
             }
+
+            public TestSpecification GivenARecordSetOfType(object type)
+            {
+                _recordSet = new RecordSet();
+                foreach (var item in type.GetType().GetProperties())
+                {
+                    _recordSet.Columns.Add(new RecordSetColumn(item.Name, (Type)item.GetValue(type, null)));
+                }
+                return this;
+            }            
+
+
 
             public TestSpecification ShouldByEmpty()
             {
@@ -60,7 +74,8 @@ namespace Photon.Data.Tests
 
                     for (int index = 0; index < values.Length; index++)
                     {
-                        Assert.AreEqual(string.Format(CultureInfo.InvariantCulture, "{0}", enumerator.Current[index]), values[index]);
+                        Assert.AreEqual(string.Format(CultureInfo.InvariantCulture, "{0}", 
+                            enumerator.Current[index]), values[index]);
                     }
                 }
 
@@ -69,9 +84,39 @@ namespace Photon.Data.Tests
 
             public TestSpecification WhenIRemove(Func<RecordSetRecord, bool> func)
             {
-                var row = _recordSet.First(func);
-                _recordSet.Remove(row);
+                var items = _recordSet.Where(func).ToArray();
+                foreach (var row in items)
+                {
+                    _recordSet.Remove(row);
+                }
                 return this;
+            }
+
+            public TestSpecification GivenARecordSet(object type, params string[] rows)
+            {
+                return GivenARecordSetOfType(type)
+                    .WhenIAdd(rows);
+            }
+
+            public TestSpecification WhenIIncreaseCapacityTo(int value)
+            {
+                Assert.IsTrue(value > _recordSet.Capacity,
+                    "Test pre-condition failed, expected recordset capacity to be higher.");
+                _recordSet.Capacity = value;
+                return this;
+            }
+
+            public TestSpecification WhenIDecreaseCapacityTo(int value)
+            {
+                Assert.IsTrue(value < _recordSet.Capacity, 
+                    "Test pre-condition failed, expected recordset capacity to be higher.");
+                _recordSet.Capacity = value;
+                return this;
+            }
+
+            public void ShouldHaveCapacity(int value)
+            {
+                Assert.AreEqual(value, _recordSet.Capacity);
             }
         }
 
@@ -152,23 +197,169 @@ namespace Photon.Data.Tests
         public void Supports_appending_after_pool_exhausted()
         {
             Specification
-                .GivenARecordSetOfType<int, string, double>()
-                .WhenIAdd(
-                    "1|Hello|1.1",
-                    "2|Goodbye|1.2",
-                    "3|Farewell|1.3")
-                .WhenIRemove(x => x.GetValue<int>(0) == 2)
+                .GivenARecordSet(new
+                    {
+                        Id = typeof(int),
+                        Greeting = typeof(string)
+                    },
+                    "1|Hello",
+                    "2|Goodbye",
+                    "3|Farewell")
+                .WhenIRemove(
+                    x => x.GetValue<int>(0) == 2)
                 .ShouldRead(
-                    "1|Hello|1.1",
-                    "3|Farewell|1.3")
+                    "1|Hello",
+                    "3|Farewell")
                 .WhenIAdd(
-                    "4|Au revoir|1.4",
-                    "5|Auf Wiedersehen|1.5")
+                    "4|Au revoir",
+                    "5|Auf Wiedersehen")
                 .ShouldRead(
-                    "1|Hello|1.1",
-                    "4|Au revoir|1.4",
-                    "3|Farewell|1.3",
-                    "5|Auf Wiedersehen|1.5");
+                    "1|Hello",
+                    "4|Au revoir",
+                    "3|Farewell",
+                    "5|Auf Wiedersehen");
         }
+
+        [Test]
+        public void Supports_increasing_capacity_with_pooled_items()
+        {
+            Specification
+                .GivenARecordSet(new
+                    {
+                        Id = typeof (int),
+                        Greeting = typeof(string)
+                    }, 
+                    "1|Goodbye",
+                    "2|Au revoir",
+                    "3|Auf Wiedersehen")
+                .WhenIRemove(x =>
+                             x.GetValue<int>(0) == 2)
+                .WhenIIncreaseCapacityTo(5)
+                .ShouldRead("1|Goodbye",
+                            "3|Auf Wiedersehen")
+                .ShouldHaveCapacity(5);
+        }
+
+        [Test]
+        public void Supports_increasing_capacity()
+        {
+            Specification
+                .GivenARecordSet(new
+                    {
+                        Id = typeof(int),
+                        Greeting = typeof(string)
+                    },
+                    "1|Goodbye",
+                    "2|Au revoir",
+                    "3|Auf Wiedersehen",
+                    "4|Dag")
+                .WhenIIncreaseCapacityTo(5)
+                .ShouldRead(
+                    "1|Goodbye",
+                    "2|Au revoir",
+                    "3|Auf Wiedersehen",
+                    "4|Dag")
+                .ShouldHaveCapacity(5);
+        }
+
+        [Test]
+        public void Supports_decreasing_compacity()
+        {
+            Specification
+                .GivenARecordSet(
+                    new
+                        {
+                            Id = typeof(int),
+                            Greeting = typeof(string)
+                        },
+                    "1|Goodbye",
+                    "2|Au revoir",
+                    "3|Auf Wiedersehen")
+                .WhenIDecreaseCapacityTo(3)
+                .ShouldRead(
+                    "1|Goodbye",
+                    "2|Au revoir",
+                    "3|Auf Wiedersehen")
+                .ShouldHaveCapacity(3);
+        }
+
+        [Test]
+        public void Support_compacting_when_decreasing_capacity()
+        {
+            Specification
+                .GivenARecordSet(
+                    new
+                    {
+                        Id = typeof(int),
+                        Greeting = typeof(string)
+                    },
+                    "1|Goodbye",
+                    "2|Au revoir",
+                    "3|Auf Wiedersehen",
+                    "4|Dag",
+                    "5|Do svidaniya")
+                .WhenIRemove(x => 
+                    new[] {2, 3, 5}.Contains(x.GetValue<int>("Id")))
+                .WhenIDecreaseCapacityTo(2)
+                .ShouldRead(
+                    "1|Goodbye",
+                    "4|Dag")
+                .ShouldHaveCapacity(2);
+        }
+
+        [Test]
+        public void Support_better_performance()
+        {
+            // This test is really just an early warning system (not a very good one), 
+            // we run everything twice to ensure we don't get jit timing.
+
+            long t1 = 1;
+            long t2 = 1;
+
+            var sw = new Stopwatch();
+            for (var j = 0; j < 2; j++)
+            {
+                sw.Restart();
+            
+                var recordSet = new RecordSet();
+                recordSet.Columns.Add(new RecordSetColumn("A", typeof(int)));
+                recordSet.Columns.Add(new RecordSetColumn("B", typeof(string)));
+                recordSet.Columns.Add(new RecordSetColumn("C", typeof(double)));
+                recordSet.Columns.Add(new RecordSetColumn("D", typeof(decimal)));
+                for (var i = 0; i < 100000; i++)
+                {
+                    var record = new RecordSetRecord();
+                    recordSet.Add(record);
+                    record.SetValue(0, 1);
+                    record.SetValue(1, 1);
+                    record.SetValue(2, 1);
+                    record.SetValue(3, 1);
+                }
+                t1 = sw.ElapsedTicks;
+            }
+
+            for (var j = 0; j < 2; j++)
+            {
+                sw.Restart();
+
+                var dataTable = new DataTable();
+                dataTable.Columns.Add(new DataColumn("A", typeof(int)));
+                dataTable.Columns.Add(new DataColumn("B", typeof(string)));
+                dataTable.Columns.Add(new DataColumn("C", typeof(double)));
+                dataTable.Columns.Add(new DataColumn("D", typeof(decimal)));
+                for (var i = 0; i < 100000; i++)
+                {
+                    var record = dataTable.Rows.Add();
+                    record[0] = 1;
+                    record[1] = 1;
+                    record[2] = 1;
+                    record[3] = 1;
+                }
+                t2 = sw.ElapsedTicks;
+            }
+
+            Assert.GreaterOrEqual((double)t2 / t1, 4.5);
+        }
+        
     }
 }
