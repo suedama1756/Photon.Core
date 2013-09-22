@@ -47,8 +47,8 @@
     <Compile Include="ExceptionFactory.cs" />
     <Compile Include="IColumn.cs" />
     <Compile Include="IColumnData.cs" />
-    <Compile Include="IRecord.cs" />
-    <Compile Include="RecordSetRecord.cs" />
+    <Compile Include="IDataObject.cs" />
+    <Compile Include="Record.cs" />
     <Compile Include="RecordSet.cs" />
     <Compile Include="RecordSetColumn.cs" />
     <Compile Include="RecordSetColumnCollection.cs" />

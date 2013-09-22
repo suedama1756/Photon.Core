@@ -48,12 +48,12 @@ namespace Photon.Data.Tests
                 {
                     var values = row.Split('|');
 
-                    var record = new RecordSetRecord();
+                    var record = new Record();
                     _recordSet.Add(record);
 
                     for (int index = 0; index < values.Length; index++)
                     {
-                        record.SetValue(index, values[index]);
+                        record.SetField(index, values[index]);
                     }    
                 }
 
@@ -82,7 +82,7 @@ namespace Photon.Data.Tests
                 return this;
             }
 
-            public TestSpecification WhenIRemove(Func<RecordSetRecord, bool> func)
+            public TestSpecification WhenIRemove(Func<Record, bool> func)
             {
                 var items = _recordSet.Where(func).ToArray();
                 foreach (var row in items)
@@ -167,7 +167,7 @@ namespace Photon.Data.Tests
                     "1|Hello|1.1",
                     "2|Goodbye|1.2",
                     "3|Farewell|1.3")
-                .WhenIRemove(x => x.GetValue<int>(0) == 2)
+                .WhenIRemove(x => x.GetField<int>(0) == 2)
                 .ShouldRead(
                     "1|Hello|1.1",
                     "3|Farewell|1.3");
@@ -182,7 +182,7 @@ namespace Photon.Data.Tests
                     "1|Hello|1.1",
                     "2|Goodbye|1.2",
                     "3|Farewell|1.3")
-                .WhenIRemove(x => x.GetValue<int>(0) == 2)
+                .WhenIRemove(x => x.GetField<int>(0) == 2)
                 .ShouldRead(
                     "1|Hello|1.1",
                     "3|Farewell|1.3")
@@ -206,7 +206,7 @@ namespace Photon.Data.Tests
                     "2|Goodbye",
                     "3|Farewell")
                 .WhenIRemove(
-                    x => x.GetValue<int>(0) == 2)
+                    x => x.GetField<int>(0) == 2)
                 .ShouldRead(
                     "1|Hello",
                     "3|Farewell")
@@ -233,7 +233,7 @@ namespace Photon.Data.Tests
                     "2|Au revoir",
                     "3|Auf Wiedersehen")
                 .WhenIRemove(x =>
-                             x.GetValue<int>(0) == 2)
+                             x.GetField<int>(0) == 2)
                 .WhenIIncreaseCapacityTo(5)
                 .ShouldRead("1|Goodbye",
                             "3|Auf Wiedersehen")
@@ -299,7 +299,7 @@ namespace Photon.Data.Tests
                     "4|Dag",
                     "5|Do svidaniya")
                 .WhenIRemove(x => 
-                    new[] {2, 3, 5}.Contains(x.GetValue<int>("Id")))
+                    new[] {2, 3, 5}.Contains(x.GetField<int>("Id")))
                 .WhenIDecreaseCapacityTo(2)
                 .ShouldRead(
                     "1|Goodbye",
@@ -328,12 +328,12 @@ namespace Photon.Data.Tests
                 recordSet.Columns.Add(new RecordSetColumn("D", typeof(decimal)));
                 for (var i = 0; i < 100000; i++)
                 {
-                    var record = new RecordSetRecord();
+                    var record = new Record();
                     recordSet.Add(record);
-                    record.SetValue(0, 1);
-                    record.SetValue(1, 1);
-                    record.SetValue(2, 1);
-                    record.SetValue(3, 1);
+                    record.SetField(0, 1);
+                    record.SetField(1, 1);
+                    record.SetField(2, 1);
+                    record.SetField(3, 1);
                 }
                 t1 = sw.ElapsedTicks;
             }

@@ -5,13 +5,13 @@ using System.Collections;
 namespace Photon.Data
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public class RecordSet : ICollection<RecordSetRecord>
+    public class RecordSet : ICollection<Record>
     {
         #region Fields
 
         private int _count;
         private int _version;
-        private readonly IColumnData<RecordSetRecord> _records;
+        private readonly IColumnData<Record> _records;
         private readonly List<IColumnData> _columnsData;
         private readonly RecordSetColumnCollection _columns;
         private int _capacity;
@@ -24,11 +24,11 @@ namespace Photon.Data
         {
             _columns = new RecordSetColumnCollection(this);
             _columnsData = new List<IColumnData>();
-            _records = (IColumnData<RecordSetRecord>)CreateColumnData(typeof(RecordSetRecord));
+            _records = (IColumnData<Record>)CreateColumnData(typeof(Record));
             _recordsPool = new List<int>();
         }
         
-        public IEnumerator<RecordSetRecord> GetEnumerator()
+        public IEnumerator<Record> GetEnumerator()
         {
             var version = _version;
             for (int sourceIndex=0, numberFound = 0; numberFound<_count && sourceIndex < _capacity; sourceIndex++) {
@@ -36,7 +36,7 @@ namespace Photon.Data
                     throw new InvalidOperationException("Collection has been modified.");
                 }
 
-                var record = _records.GetValue<RecordSetRecord>(sourceIndex);
+                var record = _records.GetValue<Record>(sourceIndex);
                 if (record != null) {
                     numberFound++;
                     yield return record;
@@ -49,7 +49,7 @@ namespace Photon.Data
             return GetEnumerator();
         }
 
-        public bool Contains(RecordSetRecord item)
+        public bool Contains(Record item)
         {
             return item != null && item.RecordSet == this;
         }
@@ -62,7 +62,7 @@ namespace Photon.Data
             }
         }
 
-        public void CopyTo(RecordSetRecord[] array, int arrayIndex)
+        public void CopyTo(Record[] array, int arrayIndex)
         {
 
         }
@@ -181,7 +181,7 @@ namespace Photon.Data
             _capacity = newCapacity;
         }
 
-        public void Add(RecordSetRecord item)
+        public void Add(Record item)
         {
             if (item == null)
             {
@@ -207,7 +207,7 @@ namespace Photon.Data
             _version++;
         }
 
-        private void AddRecord(RecordSetRecord item)
+        private void AddRecord(Record item)
         {
             //  get next handle
             var handle = ReserveRecordHandle();
@@ -222,14 +222,14 @@ namespace Photon.Data
             _records.SetValue(handle, item);
         }
 
-        private void AttachRecord(RecordSetRecord item, int handle)
+        private void AttachRecord(Record item, int handle)
         {
             //  attach the item
             item.Handle = handle;
             item.RecordSet = this;
         }
 
-        private int RemoveRecord(RecordSetRecord item)
+        private int RemoveRecord(Record item)
         {
             var handle = item.Handle;
             
@@ -255,7 +255,7 @@ namespace Photon.Data
             return handle;
         }
 
-        private static void DetachRecord(RecordSetRecord item)
+        private static void DetachRecord(Record item)
         {
             item.Handle = -1;
             item.RecordSet = null;
@@ -274,7 +274,7 @@ namespace Photon.Data
             return handle;
         }
 
-        public bool Remove(RecordSetRecord item) 
+        public bool Remove(Record item) 
         {
             if (item == null) 
             {

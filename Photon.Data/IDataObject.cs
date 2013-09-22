@@ -2,7 +2,7 @@ using System;
 
 namespace Photon.Data
 {
-    public interface IRecord 
+    public interface IDataObject 
     {
         object this [int index]
         {
@@ -15,13 +15,13 @@ namespace Photon.Data
             set;
         }    
 
-        T GetValue<T>(int index);
+        T GetField<T>(int index);
 
-        bool SetValue<T>(int index, T value);
+        bool SetField<T>(int index, T value);
 
-        T GetValue<T>(string name);
+        T GetField<T>(string name);
 
-        bool SetValue<T>(string name, T value);
+        bool SetField<T>(string name, T value);
 
         Type GetFieldType(int index);
 

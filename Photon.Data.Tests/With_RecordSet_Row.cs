@@ -9,19 +9,19 @@ namespace Photon.Data.Tests
         public class TestSpecification 
         {
             private RecordSet _recordSet;
-            private IRecord _record;
+            private IDataObject _record;
 
             public TestSpecification WhenIAddAColumnOf<TColumnValue>(TColumnValue value)
             {
                 _recordSet.Columns.Add(new RecordSetColumn(typeof(TColumnValue)));
-                _record.SetValue(_recordSet.Columns.Count - 1, value);
+                _record.SetField(_recordSet.Columns.Count - 1, value);
                 return this;
             }
 
             public TestSpecification WhenIInsertAColumn<TColumnValue>(int index, TColumnValue value)
             {
                 _recordSet.Columns.Insert(index, new RecordSetColumn(typeof(TColumnValue)));
-                _record.SetValue(index, value);
+                _record.SetField(index, value);
                 return this;
             }
 
@@ -42,7 +42,7 @@ namespace Photon.Data.Tests
             {
                 _recordSet = new RecordSet();
                 _recordSet.Columns.AddRange(columns);
-                var record = new RecordSetRecord();
+                var record = new Record();
                 _recordSet.Add(record);
                 _record = record;
                 return this;
@@ -55,7 +55,7 @@ namespace Photon.Data.Tests
                 {
                     _recordSet.Columns.Add(new RecordSetColumn(type));
                 }
-                var record = new RecordSetRecord();
+                var record = new Record();
                 _recordSet.Add(record);
                 _record = record;
                 return this;
@@ -64,27 +64,27 @@ namespace Photon.Data.Tests
             public TestSpecification GivenOrRow<TCol0>(TCol0 col0) 
             {
                 GivenOrRowOfType(typeof(TCol0));
-                _record.SetValue(0, col0);
+                _record.SetField(0, col0);
                 return this;
             }
 
             public TestSpecification ShouldRead<TCol0>(TCol0 col0) 
             {
-                Assert.AreEqual(col0, _record.GetValue<TCol0>(0));
+                Assert.AreEqual(col0, _record.GetField<TCol0>(0));
                 return this;
             }
 
             public TestSpecification ShouldRead<TCol0, TCol1>(TCol0 col0, TCol1 col1) 
             {
                 ShouldRead(col0);
-                Assert.AreEqual(col1, _record.GetValue<TCol1>(1));
+                Assert.AreEqual(col1, _record.GetField<TCol1>(1));
                 return this;
             }
 
             public TestSpecification ShouldRead<TCol0, TCol1, TCol2>(TCol0 col0, TCol1 col1, TCol2 col2) 
             {
                 ShouldRead(col0, col1);
-                Assert.AreEqual(col2, _record.GetValue<TCol2>(2));
+                Assert.AreEqual(col2, _record.GetField<TCol2>(2));
                 return this;
             }
 
@@ -95,19 +95,19 @@ namespace Photon.Data.Tests
 
             public TestSpecification WhenISetByIndex<T>(int index, T value)
             {
-                _record.SetValue(index, value);
+                _record.SetField(index, value);
                 return this;
             }
 
             public TestSpecification WhenISetByName<T>(string name, T value)
             {
-                _record.SetValue(name, value);
+                _record.SetField(name, value);
                 return this;
             }
 
             public void ShouldReadByName<T>(string name, T value)
             {
-                Assert.AreEqual(value, _record.GetValue<T>(name));
+                Assert.AreEqual(value, _record.GetField<T>(name));
             }
             
             public TestSpecification ShouldMapColumnNameToOrdinal(int index, string name)

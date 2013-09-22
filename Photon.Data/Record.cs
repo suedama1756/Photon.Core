@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Photon.Data
 {
-    public class RecordSetRecord : IRecord
+    public class Record : IDataObject
     {
         #region Fields
 
@@ -14,41 +14,41 @@ namespace Photon.Data
 
         public object this[int index]
 		{
-			get { return GetValue<object>(index); }
-			set { SetValue(index, value); }
+			get { return GetField<object>(index); }
+			set { SetField(index, value); }
 		}
 
         public object this[string name]
         {
-            get { return GetValue<object>(name); }
-            set { SetValue(name, value); }
+            get { return GetField<object>(name); }
+            set { SetField(name, value); }
         }
 		
-        public T GetValue<T>(int index)
+        public T GetField<T>(int index)
 		{
 			ThrowIfDetached();
 			return _recordSet.Field<T>(Handle, index);
 		}
 
-        public T GetValue<T>(string name)
+        public T GetField<T>(string name)
         {
             ThrowIfDetached();
             return _recordSet.Field<T>(Handle, _recordSet.Columns[name].Ordinal);
         }
 		
-		public bool SetValue<T>(int index, T value)
+		public bool SetField<T>(int index, T value)
 		{
 			ThrowIfDetached();
 			return _recordSet.Field(Handle, index, value);
 		}
 
-        public bool SetValue<T>(string name, T value)
+        public bool SetField<T>(string name, T value)
         {
             ThrowIfDetached();
             return _recordSet.Field(Handle, _recordSet.Columns[name].Ordinal, value);
         }
 
-        Type IRecord.GetFieldType(int index)
+        Type IDataObject.GetFieldType(int index)
 	    {
 	        return GetFieldType(index);
 	    }
@@ -59,7 +59,7 @@ namespace Photon.Data
             return _recordSet.Columns[index].DataType;
         }
 
-        int IRecord.GetOrdinal(string name)
+        int IDataObject.GetOrdinal(string name)
         {
             return GetOrdinal(name);
         }
@@ -70,7 +70,7 @@ namespace Photon.Data
             return _recordSet.Columns[name].Ordinal;
         }
 
-        string IRecord.GetName(int ordinal)
+        string IDataObject.GetName(int ordinal)
         {
             return GetName(ordinal);
         }
@@ -115,7 +115,7 @@ namespace Photon.Data
             {
                 return string.Empty;
             }
-            return "[" + string.Join(", ", _recordSet.Columns.Select((x, i) => GetValue<string>(i))) + "]";
+            return "[" + string.Join(", ", _recordSet.Columns.Select((x, i) => GetField<string>(i))) + "]";
 		}
     }
 }
