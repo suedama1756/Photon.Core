@@ -157,7 +157,7 @@ namespace Photon.Data
 
         private IColumnData CreateColumnData(Type type)
         {
-            var columnData = ColumnData.Create(type);
+            var columnData = ColumnDataFactory.Create(type);
             columnData.Resize(Capacity, 0);
             return columnData;
         }
