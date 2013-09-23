@@ -44,10 +44,11 @@
     <Compile Include="ColumnData.cs" />
     <Compile Include="ColumnDataNullable.cs" />
     <Compile Include="ColumnDataStore.cs" />
-    <Compile Include="ExceptionFactory.cs" />
+    <Compile Include="IRecordObserver.cs" />
+    <Compile Include="RecordSetExceptions.cs" />
     <Compile Include="IColumn.cs" />
     <Compile Include="IColumnData.cs" />
-    <Compile Include="IDataObject.cs" />
+    <Compile Include="IRecord.cs" />
     <Compile Include="Record.cs" />
     <Compile Include="RecordSet.cs" />
     <Compile Include="RecordSetColumn.cs" />

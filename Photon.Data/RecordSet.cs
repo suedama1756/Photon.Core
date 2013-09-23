@@ -17,6 +17,8 @@ namespace Photon.Data
         private int _capacity;
         private readonly List<int> _recordsPool;
         private int _lastRecordIndex = -1;
+        private IRecordObserver[] _observers;
+        
 
         #endregion
 
@@ -382,13 +384,56 @@ namespace Photon.Data
 		internal bool Field<T>(int handle, int index, T value)
 		{
 			var column = _columnsData[index];
-			return column.SetValue<T>(handle, value);
+            // The only way to get column change information is to 
+            // do it in the column, every other access point is 
+            // not neccessarily working with the underlying type.
+            // The interesting thing here is that it would seem the best place to 
+            // store oridinals would now be in the columns data's this 
+            // remove the constraint that columns have to be owned by the recordset
+            // wich always seemed a bit pointles. However, we would still need a 
+            // way to getOriginal (options....), column, the easiest is to associate the 
+            // columnsdata with a column, that way when it changes it can notify through
+            // 
+			return column.SetValue(handle, value);
 		}
 
         internal bool IsNull(int handle, int index)
         {
             var column = _columnsData[index];
             return column.IsNull(handle);
+        }
+
+        public void Subscribe(IRecordObserver observer)
+        {
+            // Subscriptions are done via an immutable array mechanism, the same as events
+            if (_observers == null)
+            {
+                _observers = new[] {observer};
+            }
+            else
+            {
+                var index = _observers.Length;
+                
+                var newObservers = new IRecordObserver[index + 1];
+                Array.Copy(_observers, newObservers, index);
+                newObservers[index] = observer;
+               
+                _observers = newObservers;
+            }
+        }
+
+        internal void FieldChanged<T>(int handle, int index, T oldValue, T newValue)
+        {
+            var observers = _observers;
+            if (observers == null)
+            {
+                return;
+            }
+
+            foreach (var observer in observers)
+            {
+                observer.Changed(_records.GetValue(index), index, oldValue, newValue);
+            }
         }
     }
 }

@@ -29,17 +29,17 @@ namespace Photon.Data
 
             if (item.RecordSet == Owner)
             {
-                throw ExceptionFactory.RecordSetColumnAlreadyOwnedByThisRecordSet("item");
+                throw RecordSetExceptions.ColumnAlreadyOwnedByThisRecordSet("item");
             }
 
             if (item.RecordSet != null)
             {
-                throw ExceptionFactory.RecordSetColumnAlreadyOwnerByAnotherRecordSet("item");
+                throw RecordSetExceptions.ColumnAlreadyOwnerByAnotherRecordSet("item");
             }
 
             if (_columnMap.ContainsKey(item.Name))
             {
-                throw ExceptionFactory.RecordSetColumnDuplicateName("item");
+                throw RecordSetExceptions.ColumnDuplicateName("item");
             }
 
             base.InsertItem(index, item);
@@ -72,18 +72,18 @@ namespace Photon.Data
             
             if (item.RecordSet == Owner)
             {
-                throw ExceptionFactory.RecordSetColumnAlreadyOwnedByThisRecordSet("item");
+                throw RecordSetExceptions.ColumnAlreadyOwnedByThisRecordSet("item");
             }
 
             if (item.RecordSet != null)
             {
-                throw ExceptionFactory.RecordSetColumnAlreadyOwnerByAnotherRecordSet("item");
+                throw RecordSetExceptions.ColumnAlreadyOwnerByAnotherRecordSet("item");
             }
 
             var oldItem = Items[index];
             if (oldItem.Name != item.Name && _columnMap.ContainsKey(item.Name))
             {
-                throw ExceptionFactory.RecordSetColumnDuplicateName("item");
+                throw RecordSetExceptions.ColumnDuplicateName("item");
             }
             
             //  set new item
@@ -112,7 +112,7 @@ namespace Photon.Data
                 var result = Find(name);
                 if (result == null)
                 {
-                    throw ExceptionFactory.RecordSetColumnNotFound();
+                    throw RecordSetExceptions.ColumnNotFound();
                 }
                 return result;
             }

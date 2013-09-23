@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Photon.Data
 {
-    public class Record : IDataObject
+    public class Record : IRecord
     {
         #region Fields
 
@@ -48,7 +48,7 @@ namespace Photon.Data
             return _recordSet.Field(Handle, _recordSet.Columns[name].Ordinal, value);
         }
 
-        Type IDataObject.GetFieldType(int index)
+        Type IRecord.GetFieldType(int index)
 	    {
 	        return GetFieldType(index);
 	    }
@@ -59,7 +59,7 @@ namespace Photon.Data
             return _recordSet.Columns[index].DataType;
         }
 
-        int IDataObject.GetOrdinal(string name)
+        int IRecord.GetOrdinal(string name)
         {
             return GetOrdinal(name);
         }
@@ -70,7 +70,7 @@ namespace Photon.Data
             return _recordSet.Columns[name].Ordinal;
         }
 
-        string IDataObject.GetName(int ordinal)
+        string IRecord.GetName(int ordinal)
         {
             return GetName(ordinal);
         }

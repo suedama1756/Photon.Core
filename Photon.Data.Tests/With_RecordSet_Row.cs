@@ -9,7 +9,7 @@ namespace Photon.Data.Tests
         public class TestSpecification 
         {
             private RecordSet _recordSet;
-            private IDataObject _record;
+            private IRecord _record;
 
             public TestSpecification WhenIAddAColumnOf<TColumnValue>(TColumnValue value)
             {

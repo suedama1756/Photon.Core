@@ -2,7 +2,7 @@ using System;
 
 namespace Photon.Data
 {
-    public interface IDataObject 
+    public interface IRecord 
     {
         object this [int index]
         {
