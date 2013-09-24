@@ -22,6 +22,27 @@ namespace Photon.Data
 
         #endregion
 
+        private class ColumnDataObserver : IColumnDataObserver
+        {
+            #region Fields
+
+            private readonly RecordSet _recordSet;
+            private readonly RecordSetColumn _column;
+
+            #endregion
+
+            public ColumnDataObserver(RecordSet recordSet, RecordSetColumn column)
+            {
+                _recordSet = recordSet;
+                _column = column;
+            }
+
+            public void Changed<T>(IColumnData data, int index, T oldValue, T newValue)
+            {
+                _recordSet.FieldChanged(index, _column.Ordinal, oldValue, newValue);
+            }
+        }
+
         public RecordSet()
         {
             _columns = new RecordSetColumnCollection(this);
@@ -155,6 +176,13 @@ namespace Photon.Data
             source.Handle = toIndex;
         }
 
+        private IColumnData CreateColumnData(RecordSetColumn column)
+        {
+            var result = CreateColumnData(column.DataType);
+            result.Subscribe(new ColumnDataObserver(this, column));
+            return result;
+        }
+
         private IColumnData CreateColumnData(Type type)
         {
             var columnData = ColumnDataFactory.Create(type);
@@ -224,22 +252,31 @@ namespace Photon.Data
             _records.SetValue(handle, item);
         }
 
-        private void AttachRecord(Record item, int handle)
-        {
-            //  attach the item
-            item.Handle = handle;
-            item.RecordSet = this;
-        }
-
         private int RemoveRecord(Record item)
         {
             var handle = item.Handle;
-            
+
             // clear row, leave no references
             for (int i = 0, n = _columnsData.Count; i < n; i++)
             {
                 _columnsData[i].Clear(item.Handle);
             }
+            
+            // at this point the record is removed, but it can still access its data, 
+            // we absolultely must treat the recod as still existing but filtered 
+            // from results, if we don't then its slot could re-used (trashing its data), 
+            // or any other manner of things could, for consistency we would need 
+            // set the recordset (or at least report) the recordset as null.
+            // 
+            // Basically, the only thing to consider is recursive adds, removes during a 
+            // notification. Anything that could affect the capacity, and what items get
+            // moved across, we would also need to ensure we are in a try finally block.
+            //
+            // Artificially restricting the count, or using a handle with the first bit set
+            // will lead to isses deleting item at 1 (As we use -1 to indicate deletion), 
+            // although we could use a different constant easily enough. So,
+            // MinValue can indicate no items, and a negate value can indicate that we 
+            // are in the process of deleting.
             _records.Clear(item.Handle);
 
             DetachRecord(item);
@@ -255,6 +292,13 @@ namespace Photon.Data
             }
 
             return handle;
+        }
+
+        private void AttachRecord(Record item, int handle)
+        {
+            //  attach the item
+            item.Handle = handle;
+            item.RecordSet = this;
         }
 
         private static void DetachRecord(Record item)
@@ -320,13 +364,18 @@ namespace Photon.Data
             var n = Columns.Count;
             for (; index < n; index++)
             {
-                Columns[index].Ordinal = index;
+                var column = Columns[index];
+                if (column.Ordinal == index)
+                {
+                    return;
+                }
+                column.Ordinal = index;
             }
         }
 
         internal void ColumnInserted(int index, RecordSetColumn item)
         {
-            _columnsData.Insert(index, CreateColumnData(item.DataType));
+            _columnsData.Insert(index, CreateColumnData(item));
             AttachColumn(item, index);
         }
 
@@ -340,10 +389,11 @@ namespace Photon.Data
         {
             if (oldItem != newItem)
             {
-                _columnsData[index] = CreateColumnData(newItem.DataType);
+                _columnsData[index] = CreateColumnData(newItem);
+                
+                DetachColumn(oldItem);
+                AttachColumn(newItem, index);
             }
-            DetachColumn(oldItem);
-            AttachColumn(newItem, index);
         }
 
         internal void ColumnsCleared(IEnumerable<RecordSetColumn> columns)
@@ -405,24 +455,10 @@ namespace Photon.Data
 
         public void Subscribe(IRecordObserver observer)
         {
-            // Subscriptions are done via an immutable array mechanism, the same as events
-            if (_observers == null)
-            {
-                _observers = new[] {observer};
-            }
-            else
-            {
-                var index = _observers.Length;
-                
-                var newObservers = new IRecordObserver[index + 1];
-                Array.Copy(_observers, newObservers, index);
-                newObservers[index] = observer;
-               
-                _observers = newObservers;
-            }
+            _observers = Arrays.Concat(_observers, observer);
         }
 
-        internal void FieldChanged<T>(int handle, int index, T oldValue, T newValue)
+        private void FieldChanged<T>(int handle, int index, T oldValue, T newValue)
         {
             var observers = _observers;
             if (observers == null)
@@ -430,10 +466,15 @@ namespace Photon.Data
                 return;
             }
 
+            var record = _records.GetValue(handle);
+            record.Changed(index, oldValue, newValue);
             foreach (var observer in observers)
             {
-                observer.Changed(_records.GetValue(index), index, oldValue, newValue);
+                
+                observer.Changed(_records.GetValue(handle), index, oldValue, newValue);
             }
         }
     }
+
+    
 }

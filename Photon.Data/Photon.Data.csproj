@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColumnData.cs" />
+    <Compile Include="ColumnDataBase.cs" />
     <Compile Include="ColumnDataFactory.cs" />
     <Compile Include="ColumnDataNullable.cs" />
     <Compile Include="ColumnDataStore.cs" />

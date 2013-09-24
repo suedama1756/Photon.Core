@@ -117,5 +117,10 @@ namespace Photon.Data
             }
             return "[" + string.Join(", ", _recordSet.Columns.Select((x, i) => GetField<string>(i))) + "]";
 		}
+
+        protected internal virtual void Changed<T>(int ordinal, T oldValue, T newValue)
+        {
+            
+        }
     }
 }
