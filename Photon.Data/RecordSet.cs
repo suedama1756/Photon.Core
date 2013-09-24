@@ -4,8 +4,10 @@ using System.Collections;
 
 namespace Photon.Data
 {
+    using System.Collections.Specialized;
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public class RecordSet : ICollection<Record>
+    public class RecordSet : ICollection<Record>, INotifyCollectionChanged
     {
         #region Fields
 
@@ -19,7 +21,6 @@ namespace Photon.Data
         private int _lastRecordIndex = -1;
         private IRecordObserver[] _observers;
         
-
         #endregion
 
         private class ColumnDataObserver : IColumnDataObserver
@@ -235,8 +236,10 @@ namespace Photon.Data
 
             _count++;
             _version++;
-        }
 
+            OnAdded(item);
+        }
+        
         private void AddRecord(Record item)
         {
             //  get next handle
@@ -337,11 +340,11 @@ namespace Photon.Data
             // update tracking information
             _count--;
             _version++;
-
+            
             // done
             return false;
         }
-
+        
         public void Clear() 
         {
             //  detach all
@@ -473,6 +476,33 @@ namespace Photon.Data
                 
                 observer.Changed(_records.GetValue(handle), index, oldValue, newValue);
             }
+        }
+
+        private void OnRemoved(Record item)
+        {
+            OnCollectionChanged(NotifyCollectionChangedAction.Remove, item);
+        }
+
+        private void OnAdded(Record item)
+        {
+            OnCollectionChanged(NotifyCollectionChangedAction.Add, item);
+        }
+
+        protected virtual void OnCollectionChanged(NotifyCollectionChangedAction action, Record item)
+        {
+            var collectionChanged = CollectionChanged;
+            if (collectionChanged != null)
+            {
+                collectionChanged(this, new NotifyCollectionChangedEventArgs(
+                    action, item));
+            }
+        }
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+        public void Unsubscribe(IRecordObserver observer)
+        {
+            _observers = Arrays.Remove(_observers, observer);
         }
     }
 
