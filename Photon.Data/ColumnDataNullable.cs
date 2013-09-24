@@ -1,24 +1,23 @@
-using System;
 using System.Collections.Generic;
 using System.Collections;
 
 namespace Photon.Data
 {
-    internal class ColumnDataNullable<TDataType> : IColumnData<TDataType?> where TDataType : struct
+    internal class ColumnDataNullable<TDataType> : ColumnDataBase<TDataType?> where TDataType : struct
     {
         private BitArray _hasValue;
         private readonly ColumnDataStore<TDataType> _values;
-
-        public ColumnDataNullable() : this(EqualityComparer<TDataType>.Default) 
+        
+        public ColumnDataNullable() : this(EqualityComparer<TDataType?>.Default) 
         {
         }
 
-        public ColumnDataNullable(IEqualityComparer<TDataType> equalityComparer) 
+        public ColumnDataNullable(IEqualityComparer<TDataType?> equalityComparer) : base(equalityComparer)
         {
-            _values = new ColumnDataStore<TDataType>(equalityComparer);  
+            _values = new ColumnDataStore<TDataType>();
         }
 
-        public void Resize(int capacity, int preserve)
+        public override void Resize(int capacity, int preserve)
         {
             _values.Resize(capacity, preserve);
             if (_hasValue == null)
@@ -38,81 +37,28 @@ namespace Photon.Data
             }
         }
 
-        public int Capacity 
+        public override int Capacity 
         {
             get { return _values.Capacity; }
         }
 
-        public bool IsNull(int index) 
-        {
-            return !_hasValue[index];
-        }
-
-        public void Move(int sourceIndex, int targetIndex)
-        {
-            SetValue(targetIndex, GetValue(sourceIndex));
-        }
-
-        public Type DataType 
-        {
-            get
-            {
-                return typeof(TDataType?);
-            }
-        }
-
-        public bool Clear(int index)
-        {
-            if (_hasValue[index]) 
-            {
-                // set null
-                _hasValue[index] = false;
-
-                // clear data (it may be hold references, unlikely but...
-                _values[index] = default(TDataType);
-
-                // signal changed
-                return true;
-            }
-
-            return false;
-        }
-
-        public T GetValue<T>(int index)
-        {
-            return Generics.Convert<TDataType?, T>(GetValue(index));
-        }
-
-        public bool SetValue<T>(int index, T value)
-        {
-            return SetValue(index, Generics.Convert<T, TDataType?>(value));
-        }
-
-        public TDataType? GetValue(int index)
+        protected override TDataType? GetValueRaw(int index)
         {
             return _hasValue[index] ? _values[index] : (TDataType?)null;
         }
 
-        public bool SetValue(int index, TDataType? value) 
+        protected override void SetValueRaw(int index, TDataType? value)
         {
-            //  if null the clear
-            if (value == null) 
+            if (value == null)
             {
-                return Clear(index);
+                _hasValue[index] = false;
+                _values[index] = default(TDataType);
             }
-
-            //  if has value then simply update
-            if (_hasValue[index]) 
+            else
             {
-                //  previous value was not null, simply change
-                return _values.ChangeValue(index, value.Value);
+                _hasValue[index] = true;
+                _values[index] = value.Value;
             }
-
-            // was null, set and return
-            _hasValue[index] = true;
-            _values[index] = value.Value;
-            return true;
         }
     }
-    
 }

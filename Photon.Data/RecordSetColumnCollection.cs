@@ -5,7 +5,9 @@ using System.Linq;
 
 namespace Photon.Data
 {
-    public class RecordSetColumnCollection  : Collection<RecordSetColumn> 
+    using System.Collections.Specialized;
+
+    public class RecordSetColumnCollection  : Collection<RecordSetColumn>, INotifyCollectionChanged
     {
         private readonly Dictionary<string, RecordSetColumn> _columnMap = new Dictionary<string, RecordSetColumn>();
 
@@ -19,7 +21,7 @@ namespace Photon.Data
             get;
             private set;
         }
-
+        
         protected override void InsertItem(int index, RecordSetColumn item)
         {
             if (item == null)
@@ -45,6 +47,8 @@ namespace Photon.Data
             base.InsertItem(index, item);
             _columnMap[item.Name] = item;
             Owner.ColumnInserted(index, item);
+
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         protected override void RemoveItem(int index)
@@ -53,6 +57,8 @@ namespace Photon.Data
             base.RemoveItem(index);
             _columnMap.Remove(item.Name);
             Owner.ColumnRemoved(index, item);
+
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
         }
 
         protected override void ClearItems()
@@ -61,6 +67,8 @@ namespace Photon.Data
             base.ClearItems();
             _columnMap.Clear();
             Owner.ColumnsCleared(columns);
+
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
         protected override void SetItem(int index, RecordSetColumn item)
@@ -98,6 +106,9 @@ namespace Photon.Data
 
             //  notify
             Owner.ColumnSet(index, oldItem, item);
+
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, 
+                item, oldItem, index));
         }
 
         public RecordSetColumn this[string name]
@@ -137,5 +148,16 @@ namespace Photon.Data
                 Add(column);
             }
         }
+
+        private void OnCollectionChanged(NotifyCollectionChangedEventArgs args)
+        {
+            var collectionChanged = CollectionChanged;
+            if (collectionChanged != null)
+            {
+                collectionChanged(this, args);
+            }
+        }
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
     }
 }

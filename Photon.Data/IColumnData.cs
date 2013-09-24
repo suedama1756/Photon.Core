@@ -2,7 +2,7 @@ using System;
 
 namespace Photon.Data
 {
-    public interface IColumnData
+    internal interface IColumnData
     {
         int Capacity { get; }
 
@@ -19,9 +19,11 @@ namespace Photon.Data
         bool IsNull(int index);
         
         void Move(int sourceIndex, int targetIndex);
+
+        void Subscribe(IColumnDataObserver observer);
     }
 
-    public interface IColumnData<TDataType> : IColumnData
+    internal interface IColumnData<TDataType> : IColumnData
     {
         TDataType GetValue(int index);
 

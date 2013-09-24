@@ -13,14 +13,8 @@ namespace Photon.Data
 
         #endregion
 
-        public ColumnDataStore(IEqualityComparer<TDataType> equalityComparer)
+        public ColumnDataStore()
         {
-            if (equalityComparer == null)
-            {
-                throw new ArgumentNullException("equalityComparer");
-            }
-            _equalityComparer = equalityComparer;
-            
             // determine whether the type is nullable, e.g. if its a ref type, or nullable<>
             _isNullable = !typeof(TDataType).IsValueType ||
                 Nullable.GetUnderlyingType(typeof(TDataType)) != null;
@@ -55,18 +49,7 @@ namespace Photon.Data
         {
             get { return _isNullable; }
         }
-
-        public bool ChangeValue(int index, TDataType value)
-        {
-            var oldValue = _data[index];
-            if (!_equalityComparer.Equals(oldValue, value))
-            {
-                _data[index] = value;
-                return true;
-            }
-            return false;
-        }
-
+        
         public TDataType this[int index] 
         {
             get

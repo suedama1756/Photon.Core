@@ -42,8 +42,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColumnData.cs" />
+    <Compile Include="ColumnDataBase.cs" />
+    <Compile Include="ColumnDataFactory.cs" />
     <Compile Include="ColumnDataNullable.cs" />
     <Compile Include="ColumnDataStore.cs" />
+    <Compile Include="IColumnDataObserver.cs" />
     <Compile Include="IRecordObserver.cs" />
     <Compile Include="RecordSetExceptions.cs" />
     <Compile Include="IColumn.cs" />
