@@ -7,10 +7,38 @@ namespace Photon.Data
     {
         #region Fields
 
-        internal int Handle = -1;
+        private int _handle = Int32.MinValue;
         private RecordSet _recordSet;
 
         #endregion
+
+        internal void Attach(RecordSet recordSet, int handle)
+        {
+            _recordSet = recordSet;
+            _handle = handle;
+        }
+
+        internal void Detach()
+        {
+            _handle = Int32.MinValue;
+            _recordSet = null;
+        }
+
+        internal void Remove()
+        {
+            unchecked
+            {
+                _handle |= (int)0x80000000;
+            }
+        }
+
+        internal int Handle
+        {
+            get
+            {
+                return _handle & 0x7FFFFFFF;
+            }
+        }
 
         public object this[int index]
 		{
@@ -33,7 +61,7 @@ namespace Photon.Data
         public T GetField<T>(string name)
         {
             ThrowIfDetached();
-            return _recordSet.Field<T>(Handle, _recordSet.Columns[name].Ordinal);
+            return _recordSet.Field<T>(Handle, GetOrdinal(name));
         }
 		
 		public bool SetField<T>(int index, T value)
@@ -45,7 +73,7 @@ namespace Photon.Data
         public bool SetField<T>(string name, T value)
         {
             ThrowIfDetached();
-            return _recordSet.Field(Handle, _recordSet.Columns[name].Ordinal, value);
+            return _recordSet.Field(Handle, GetOrdinal(name), value);
         }
 
         Type IRecord.GetFieldType(int index)
@@ -97,8 +125,20 @@ namespace Photon.Data
 
         public RecordSet RecordSet
         {
-            get { return _recordSet; }
-            internal set { _recordSet = value; }
+            get
+            {
+                return _recordSet;
+            }
+        }
+
+        public bool IsDetached
+        {
+            get { return _handle == Int32.MinValue; }
+        }
+
+        public bool IsRemoved
+        {
+            get { return _handle < 0; }
         }
 
         protected void ThrowIfDetached()

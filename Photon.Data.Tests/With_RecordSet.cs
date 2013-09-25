@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using NUnit.Framework;
 
@@ -16,10 +18,11 @@ namespace Photon.Data.Tests
         {
             private RecordSet _recordSet;
             private readonly List<string> _changeLog = new List<string>();
+            private readonly List<string> _deleteLog = new List<string>();
 
             private class Observer : IRecordObserver
             {
-                private TestSpecification _specification;
+                private readonly TestSpecification _specification;
 
                 public Observer(TestSpecification specification)
                 {
@@ -29,25 +32,44 @@ namespace Photon.Data.Tests
                 public void Changed<T>(IRecord source, int ordinal, T oldValue, T newValue)
                 {
                     var output = new StringBuilder();
-                    for (var i = 0; i < source.FieldCount; i++)
-                    {
-                        if (i > 0)
+                    LogRecord(output, source, new Dictionary<string, object>
                         {
-                            output.Append('|');
-                        }
-                        output.Append((i == ordinal ? Generics.Convert<T, string>(oldValue) : source.GetField<string>(i)) ?? "Null");
-                    }
+                            {source.GetName(ordinal), oldValue}
+                        });
                     output.Append(" - ");
-                    for (var i = 0; i < source.FieldCount; i++)
-                    {
-                        if (i > 0)
+                    LogRecord(output, source, new Dictionary<string, object>
                         {
-                            output.Append('|');
-                        }
-                        output.Append((i == ordinal ? Generics.Convert<T, string>(newValue) : source.GetField<string>(i)) ?? "Null");
-                    }
+                            {source.GetName(ordinal), newValue}
+                        });
                     _specification._changeLog.Add(output.ToString());
                 }
+            }
+
+            private static string LogRecord(IRecord record, Dictionary<string, object> overrides = null)
+            {
+                var output = new StringBuilder();
+                LogRecord(output, record, overrides);
+                return output.ToString();
+            }
+
+            private static void LogRecord(StringBuilder output, IRecord record, Dictionary<string, object> overrides = null)
+            {
+                for (var i = 0; i < record.FieldCount; i++)
+                {
+                    if (i > 0)
+                    {
+                        output.Append('|');
+                    }
+                    object value;
+                    if (overrides != null && overrides.TryGetValue(record.GetName(i), out value))
+                    {
+                        output.Append(Generics.Convert<object, string>(value) ?? "Null");
+                    }
+                    else
+                    {
+                        output.Append(record.GetField<string>(i) ?? "Null");    
+                    }
+                }   
             }
 
             public TestSpecification GivenARecordSetOfType<T1, T2, T3>()
@@ -173,6 +195,42 @@ namespace Photon.Data.Tests
             {
                 _recordSet.Subscribe(new Observer(this));
                 return this;
+            }
+
+            public TestSpecification WhenIObserveRemoves()
+            {
+                _recordSet.CollectionChanged += (s, e) =>
+                    {
+                        switch (e.Action)
+                        {
+                            case NotifyCollectionChangedAction.Add:
+                                break;
+                            case NotifyCollectionChangedAction.Remove:
+                                foreach (IRecord item in e.OldItems)
+                                {
+                                    _deleteLog.Add(LogRecord(item));    
+                                }
+                                break;
+                            case NotifyCollectionChangedAction.Replace:
+                                break;
+                            case NotifyCollectionChangedAction.Move:
+                                break;
+                            case NotifyCollectionChangedAction.Reset:
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    };
+                return this;
+            }
+
+            public void ShouldLogRemoved(params string[] log)
+            {
+                Assert.AreEqual(_deleteLog.Count, log.Length);
+                for (var i = 0; i < log.Length; i++)
+                {
+                    Assert.AreEqual(_deleteLog[i], log[i]);            
+                }
             }
         }
 
@@ -340,7 +398,7 @@ namespace Photon.Data.Tests
         }
 
         [Test]
-        public void Support_compacting_when_decreasing_capacity()
+        public void Supports_compacting_when_decreasing_capacity()
         {
             Specification
                 .GivenARecordSet(
@@ -380,8 +438,64 @@ namespace Photon.Data.Tests
                 );
         }
 
+        public struct RecordHandle
+        {
+            private int _handle;
+
+            public RecordHandle(int handle)
+            {
+                _handle = handle;
+            }
+
+            public void Detach()
+            {
+                _handle = Int32.MinValue;
+            }
+
+            public void Remove()
+            {
+                unchecked
+                {
+                    _handle |= (int)0x80000000;
+                }
+            }
+
+            public int Index
+            {
+                get { return _handle & 0x7FFFFFFF; }
+            }
+
+
+            public bool IsDetached
+            {
+                get { return _handle == Int32.MinValue; }
+            }
+
+            public bool IsRemoved
+            {
+                get { return _handle < 0; }
+            }
+        }
+
         [Test]
-        public void Support_better_performance()
+        public void Supports_reading_on_deletion()
+        {
+            Specification
+                .GivenARecordSet(
+                    new
+                        {
+                            Id = typeof(int),
+                            Greeting = typeof(string)
+                        },
+                    "1|Hello",
+                    "2|Bonjour")
+                .WhenIObserveRemoves()
+                .WhenIRemove(x => x.GetField<int>(0) == 1)
+                .ShouldLogRemoved("1|Hello");
+        }
+
+        [Test]
+        public void Supports_better_performance()
         {
             // This test is really just an early warning system (not a very good one), 
             // we run everything twice to ensure we don't get jit timing.

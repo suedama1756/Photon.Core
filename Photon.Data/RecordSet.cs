@@ -61,7 +61,7 @@ namespace Photon.Data
                 }
 
                 var record = _records.GetValue<Record>(sourceIndex);
-                if (record != null) {
+                if (record != null && !record.IsRemoved) {
                     numberFound++;
                     yield return record;
                 }
@@ -174,7 +174,7 @@ namespace Photon.Data
 
             //  move record
             _records.Move(source.Handle, toIndex);
-            source.Handle = toIndex;
+            source.Attach(this, toIndex);
         }
 
         private IColumnData CreateColumnData(RecordSetColumn column)
@@ -224,7 +224,7 @@ namespace Photon.Data
                 throw new ArgumentException("The item already belongs to another record set.", "item");
             }
                 
-            if (item.Handle != -1)
+            if (!item.IsDetached)
             {
                 throw new ArgumentException("The item already belongs to this record set.", "item");
             }
@@ -249,67 +249,13 @@ namespace Photon.Data
                 _lastRecordIndex = handle;
             }
 
-            AttachRecord(item, handle);
-
+            item.Attach(this, handle);
+            
             // save handle
             _records.SetValue(handle, item);
         }
 
-        private int RemoveRecord(Record item)
-        {
-            var handle = item.Handle;
-
-            // clear row, leave no references
-            for (int i = 0, n = _columnsData.Count; i < n; i++)
-            {
-                _columnsData[i].Clear(item.Handle);
-            }
-            
-            // at this point the record is removed, but it can still access its data, 
-            // we absolultely must treat the recod as still existing but filtered 
-            // from results, if we don't then its slot could re-used (trashing its data), 
-            // or any other manner of things could, for consistency we would need 
-            // set the recordset (or at least report) the recordset as null.
-            // 
-            // Basically, the only thing to consider is recursive adds, removes during a 
-            // notification. Anything that could affect the capacity, and what items get
-            // moved across, we would also need to ensure we are in a try finally block.
-            //
-            // Artificially restricting the count, or using a handle with the first bit set
-            // will lead to isses deleting item at 1 (As we use -1 to indicate deletion), 
-            // although we could use a different constant easily enough. So,
-            // MinValue can indicate no items, and a negate value can indicate that we 
-            // are in the process of deleting.
-            _records.Clear(item.Handle);
-
-            DetachRecord(item);
-
-            if (handle == _lastRecordIndex)
-            {
-                do
-                {
-                    handle--;
-                } while (handle >= 0 && _records.GetValue(handle) == null);
-
-                _lastRecordIndex = handle;
-            }
-
-            return handle;
-        }
-
-        private void AttachRecord(Record item, int handle)
-        {
-            //  attach the item
-            item.Handle = handle;
-            item.RecordSet = this;
-        }
-
-        private static void DetachRecord(Record item)
-        {
-            item.Handle = -1;
-            item.RecordSet = null;
-        }
-
+        
         private int ReserveRecordHandle()
         {
             var handle = _lastRecordIndex + 1;
@@ -330,27 +276,62 @@ namespace Photon.Data
                 throw new ArgumentNullException("item");
             }
 
-            if (item.RecordSet != this) 
+            if (item.RecordSet != this || item.IsRemoved) 
             {
                 return false;
             }
 
-            _recordsPool.Add(RemoveRecord(item));
+            item.Remove();
 
             // update tracking information
             _count--;
             _version++;
             
+            try
+            {
+                OnRemoved(item);
+            }
+            finally
+            {
+                DetachRecord(item);
+            }
+
             // done
-            return false;
+            return true;
         }
-        
+
+        private void DetachRecord(Record item)
+        {
+            var handle = item.Handle;
+            for (int i = 0, n = _columnsData.Count; i < n; i++)
+            {
+                _columnsData[i].Clear(item.Handle);
+            }
+            _records.Clear(item.Handle);
+
+            item.Detach();
+
+            if (handle == _lastRecordIndex)
+            {
+                do
+                {
+                    handle--;
+                } while (handle >= 0 && _records.GetValue(handle) == null);
+
+                _lastRecordIndex = handle;
+            }
+
+            _recordsPool.Add(handle);
+        }
+
         public void Clear() 
         {
+            // TODO: No notification on clear
+
             //  detach all
             foreach (var item in this)
             {
-                DetachRecord(item);
+                item.Detach();
             }
 
             // clear storage, reset pool

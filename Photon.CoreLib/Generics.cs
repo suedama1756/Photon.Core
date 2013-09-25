@@ -6,9 +6,54 @@ namespace Photon
 {
     public static class Generics
     {
-        private static readonly ConcurrentDictionary<Type, Delegate> BoxedTypeMap = new ConcurrentDictionary<Type, Delegate>();
+        private static readonly ConcurrentDictionary<DynamicConversionKey, Delegate> BoxedTypeMap = new ConcurrentDictionary<DynamicConversionKey,
+            Delegate>();
         private static readonly MethodInfo CastAndConvertMethod = typeof(Generics)
             .GetMethod("CastAndConvert", BindingFlags.Static | BindingFlags.NonPublic);
+
+        private struct DynamicConversionKey : IEquatable<DynamicConversionKey>
+        {
+            private readonly Type _from;
+            private readonly Type _to;
+
+            public DynamicConversionKey(Type from, Type to)
+            {
+                _from = from;
+                _to = to;
+            }
+
+            public bool Equals(DynamicConversionKey other)
+            {
+                if (ReferenceEquals(other, this))
+                {
+                    return true;
+                }
+                
+                if (ReferenceEquals(other, null))
+                {
+                    return false;
+                }
+                
+                return _from == other._from && _to == other._to;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is DynamicConversionKey))
+                {
+                    return false;
+                }
+                return Equals((DynamicConversionKey)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((_from != null ? _from.GetHashCode() : 0)*397) ^ (_to != null ? _to.GetHashCode() : 0);
+                }
+            }
+        }
 
         public static TTarget Convert<TSource, TTarget>(TSource source)
         {
@@ -24,13 +69,14 @@ namespace Photon
                 if (sourceType != typeof(TSource) && sourceType.IsValueType)
                 {
                     Delegate convertDelegate;
-                    if (!BoxedTypeMap.TryGetValue(sourceType, out convertDelegate))
+                    var key = new DynamicConversionKey(sourceType, typeof(TTarget));
+                    if (!BoxedTypeMap.TryGetValue(key, out convertDelegate))
                     {
-                        convertDelegate = Delegate.CreateDelegate(typeof(Func<TSource, TTarget>),
-                            CastAndConvertMethod.MakeGenericMethod(source.GetType(), typeof(TTarget)));
-                        BoxedTypeMap.TryAdd(sourceType, convertDelegate);
+                        convertDelegate = Delegate.CreateDelegate(typeof(Func<object, TTarget>),
+                            CastAndConvertMethod.MakeGenericMethod(sourceType, typeof(TTarget)));
+                        BoxedTypeMap.TryAdd(key, convertDelegate);
                     }
-                    return ((Func<TSource, TTarget>)convertDelegate)(source);
+                    return ((Func<object, TTarget>)convertDelegate)(source);
                 }
             }
 
